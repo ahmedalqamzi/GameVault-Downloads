@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11110f" />
+    <meta name="description" content="Set up an optional private GameVault cloud for backup and autosync." />
+    <title>GameVault cloud setup</title>
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="docs.css" />
+  </head>
+  <body>
+    <header class="doc-header"><div class="doc-shell"><a class="doc-brand" href="./"><img src="assets/icon.svg" width="32" height="32" alt="" />GameVault</a><a class="back-link" href="./">← Download page</a></div></header>
+    <main class="doc-main"><div class="doc-shell">
+      <p class="doc-eyebrow">Optional cloud</p>
+      <h1>Your library, on your cloud.</h1>
+      <p class="doc-lede">GameVault works without a server. Use this setup only when you want an off-device backup, autosync, or the same collection on several of your devices.</p>
+
+      <section class="doc-section">
+        <h2>What you need</h2>
+        <ul><li>A Windows, macOS, or Linux computer</li><li>Node.js 22 or newer</li><li>A free Cloudflare account</li><li>About 10 minutes</li><li>Optional Twitch/IGDB credentials for live game metadata</li></ul>
+        <div class="doc-card"><strong>Your app does not wait for this.</strong><p>Install GameVault and use phone-only mode immediately. You can connect cloud later without reinstalling.</p></div>
+      </section>
+
+      <section class="doc-section">
+        <h2>Guided setup</h2>
+        <ol>
+          <li>Download and extract the setup kit on a computer.</li>
+          <li>Install <a href="https://nodejs.org/" target="_blank" rel="noreferrer">Node.js 22+</a> and create a <a href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noreferrer">Cloudflare account</a>.</li>
+          <li>On macOS/Linux run <code>chmod +x setup-cloud.sh</code>, then <code>./setup-cloud.sh</code>.</li>
+          <li>On Windows PowerShell run <code>Set-ExecutionPolicy -Scope Process Bypass</code>, then <code>./setup-cloud.ps1</code>.</li>
+          <li>Follow the prompts. Cloudflare login opens in your browser.</li>
+          <li>At the end, copy the printed Worker URL and personal token into <strong>GameVault → Settings → Optional Cloud</strong>.</li>
+          <li>Choose <strong>Save connection</strong>, then <strong>Sync</strong>.</li>
+        </ol>
+        <a class="doc-button" href="downloads/GameVault-Cloud-Setup.zip" download>Download cloud setup kit</a>
+      </section>
+
+      <section class="doc-section">
+        <h2>What the helper does</h2>
+        <p>It installs Cloudflare Wrangler, creates your D1 database, generates a random 64-character token, stores that token as a Worker secret, applies the complete GameVault schema, and deploys the API. It can also prompt securely for optional IGDB credentials.</p>
+        <p>The kit contains placeholders only. It does not contain another person's account, token, database ID, private game library, or metadata credentials.</p>
+      </section>
+
+      <section class="doc-section">
+        <h2>Add game metadata</h2>
+        <p>Live search, refreshed artwork, dates, scores, and trailers use IGDB. Create Twitch application credentials using the <a href="https://api-docs.igdb.com/#account-creation" target="_blank" rel="noreferrer">official IGDB authentication guide</a>. The setup helper can store them as Worker secrets without putting them in source files.</p>
+      </section>
+
+      <section class="doc-section">
+        <h2>Keep the token private</h2>
+        <p>This API is intentionally single-owner. Anyone with its token can read and change the whole cloud library. Each friend should deploy a separate kit. Never share a URL/token pair or commit the generated <code>.gamevault-sync-token</code> file.</p>
+      </section>
+    </div></main>
+    <footer class="doc-footer"><div class="doc-shell">GameVault · Local by default · Personal cloud optional</div></footer>
+  </body>
+</html>

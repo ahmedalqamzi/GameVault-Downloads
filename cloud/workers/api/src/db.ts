@@ -1,0 +1,563 @@
+import type {
+  ClientChange,
+  FranchiseRef,
+  Game,
+  GameRelation,
+  GameVideo,
+  LibraryEntry,
+  LibraryItem,
+  LibraryStatus,
+  PullResponse,
+  PushResult,
+  SyncEvent,
+  SyncPayload,
+  StoreLink,
+  UserPreferences,
+} from "@gamevault/shared";
+import type { EventRow, GameRow, LibraryRow, PreferencesRow } from "./types";
+
+const LIBRARY_STATUSES = new Set<LibraryStatus>([
+  "wishlist",
+  "backlog",
+  "playing",
+  "completed",
+  "dropped",
+]);
+const FRIEND_STATUSES = new Set(["owns", "playing", "completed", "wants_to_play"]);
+
+function parseArray<T>(value: string): T[] {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rowToGame(row: GameRow): Game {
+  const franchises = parseArray<FranchiseRef>(row.franchises_json);
+  const remasters = parseArray<GameRelation>(row.remasters_json);
+  const storeLinks = parseArray<StoreLink>(row.store_links_json);
+  const videos = parseArray<GameVideo>(row.videos_json);
+  return {
+    id: row.id,
+    name: row.name,
+    ...(row.slug ? { slug: row.slug } : {}),
+    ...(row.summary ? { summary: row.summary } : {}),
+    ...(row.cover_url ? { coverUrl: row.cover_url } : {}),
+    ...(row.first_release_date ? { firstReleaseDate: row.first_release_date } : {}),
+    ...(row.status !== null ? { status: row.status } : {}),
+    ...(row.category !== null ? { category: row.category } : {}),
+    ...(row.source_updated_at ? { sourceUpdatedAt: row.source_updated_at } : {}),
+    ...(row.source_created_at ? { sourceCreatedAt: row.source_created_at } : {}),
+    ...(row.is_custom ? { isCustom: true } : {}),
+    ...(row.average_artwork_color ? { averageArtworkColor: row.average_artwork_color } : {}),
+    ...(row.critic_score !== null ? { criticScore: row.critic_score } : {}),
+    ...(row.critic_score_count !== null ? { criticScoreCount: row.critic_score_count } : {}),
+    ...(row.hype !== null ? { hype: row.hype } : {}),
+    ...(parseArray<string>(row.publishers_json).length ? { publishers: parseArray<string>(row.publishers_json) } : {}),
+    ...(remasters.length ? { remasters } : {}),
+    ...(franchises.length ? { franchises } : {}),
+    ...(storeLinks.length ? { storeLinks } : {}),
+    ...(videos.length ? { videos } : {}),
+    platforms: parseArray(row.platforms_json),
+    genres: parseArray(row.genres_json),
+    releaseDates: parseArray(row.release_dates_json),
+  };
+}
+
+function rowToEntry(row: LibraryRow): LibraryEntry {
+  const status = LIBRARY_STATUSES.has(row.entry_status as LibraryStatus)
+    ? (row.entry_status as LibraryStatus)
+    : "wishlist";
+  return {
+    gameId: row.id,
+    status,
+    notes: row.notes,
+    ...(row.personal_rating !== null ? { personalRating: row.personal_rating } : {}),
+    ...(row.story_progress !== null ? { storyProgress: row.story_progress } : {}),
+    ...(row.overall_progress !== null ? { overallProgress: row.overall_progress } : {}),
+    ...(row.review ? { review: row.review } : {}),
+    ...(row.completed_at ? { completedAt: row.completed_at } : {}),
+    ...(parseArray<string>(row.library_platforms_json).length
+      ? { libraryPlatforms: parseArray<string>(row.library_platforms_json) }
+      : {}),
+    ...(row.import_sources ? { importSources: row.import_sources } : {}),
+    ...(parseArray<string>(row.tags_json).length ? { tags: parseArray<string>(row.tags_json) } : {}),
+    ...(parseArray<NonNullable<LibraryEntry["playthroughs"]>[number]>(row.playthroughs_json).length
+      ? { playthroughs: parseArray<NonNullable<LibraryEntry["playthroughs"]>[number]>(row.playthroughs_json) }
+      : {}),
+    ...(parseArray<NonNullable<LibraryEntry["playSessions"]>[number]>(row.play_sessions_json).length
+      ? { playSessions: parseArray<NonNullable<LibraryEntry["playSessions"]>[number]>(row.play_sessions_json) }
+      : {}),
+    ...(parseArray<NonNullable<LibraryEntry["friends"]>[number]>(row.friends_json).length
+      ? { friends: parseArray<NonNullable<LibraryEntry["friends"]>[number]>(row.friends_json) }
+      : {}),
+    ...(row.is_up_next ? { isUpNext: true } : {}),
+    ...(row.manual_order !== null ? { manualOrder: row.manual_order } : {}),
+    createdAt: row.entry_created_at,
+    updatedAt: row.entry_updated_at,
+    ...(row.deleted_at ? { deletedAt: row.deleted_at } : {}),
+  };
+}
+
+function eventFromRow(row: EventRow): SyncEvent {
+  return {
+    revision: row.revision,
+    eventId: row.event_id,
+    entity: row.entity,
+    entityId: row.entity_id,
+    operation: row.operation,
+    payload: JSON.parse(row.payload_json) as SyncPayload,
+    createdAt: row.created_at,
+  };
+}
+
+export function isValidGame(game: Game): boolean {
+  const validID = Number.isSafeInteger(game.id) && (game.id > 0 || (game.id < 0 && game.isCustom));
+  return Boolean(validID && game.name.trim().length > 0);
+}
+
+export function isValidEntry(entry: LibraryEntry | undefined, gameId: number): boolean {
+  return Boolean(
+    entry
+      && entry.gameId === gameId
+      && LIBRARY_STATUSES.has(entry.status)
+      && entry.notes.length <= 20_000
+      && (entry.review === undefined || entry.review.length <= 50_000)
+      && (entry.personalRating === undefined
+        || (Number.isInteger(entry.personalRating)
+          && entry.personalRating >= 0
+          && entry.personalRating <= 100))
+      && (entry.storyProgress === undefined
+        || (Number.isInteger(entry.storyProgress) && entry.storyProgress >= 0 && entry.storyProgress <= 100))
+      && (entry.overallProgress === undefined
+        || (Number.isInteger(entry.overallProgress) && entry.overallProgress >= 0 && entry.overallProgress <= 100))
+      && (entry.libraryPlatforms === undefined
+        || (Array.isArray(entry.libraryPlatforms)
+          && entry.libraryPlatforms.length <= 100
+          && entry.libraryPlatforms.every((platform) => typeof platform === "string" && platform.trim().length <= 100)))
+      && (entry.tags === undefined || (
+        Array.isArray(entry.tags)
+        && entry.tags.length <= 50
+        && entry.tags.every((tag) => typeof tag === "string" && tag.trim().length <= 60)
+      ))
+      && (entry.playthroughs === undefined || (
+        Array.isArray(entry.playthroughs)
+        && entry.playthroughs.length <= 250
+        && entry.playthroughs.every((playthrough) => (
+          typeof playthrough.id === "string"
+          && playthrough.id.length <= 100
+          && !Number.isNaN(Date.parse(playthrough.startedAt))
+          && (playthrough.endedAt === undefined || !Number.isNaN(Date.parse(playthrough.endedAt)))
+          && (playthrough.platform === undefined || playthrough.platform.length <= 100)
+          && (playthrough.notes === undefined || playthrough.notes.length <= 2_000)
+        ))
+      ))
+      && (entry.playSessions === undefined || (
+        Array.isArray(entry.playSessions)
+        && entry.playSessions.length <= 10_000
+        && entry.playSessions.every((session) => (
+          typeof session.id === "string"
+          && session.id.length <= 100
+          && !Number.isNaN(Date.parse(session.playedAt))
+          && Number.isInteger(session.minutes)
+          && session.minutes > 0
+          && session.minutes <= 1_440
+          && (session.platform === undefined || session.platform.length <= 100)
+          && (session.notes === undefined || session.notes.length <= 2_000)
+        ))
+      ))
+      && (entry.friends === undefined || (
+        Array.isArray(entry.friends)
+        && entry.friends.length <= 250
+        && entry.friends.every((friend) => (
+          typeof friend.id === "string"
+          && friend.id.length <= 100
+          && typeof friend.name === "string"
+          && friend.name.trim().length <= 100
+          && FRIEND_STATUSES.has(friend.status)
+          && (friend.platform === undefined || friend.platform.length <= 100)
+        ))
+      ))
+      && (entry.isUpNext === undefined || typeof entry.isUpNext === "boolean")
+      && (entry.manualOrder === undefined || Number.isFinite(entry.manualOrder))
+      && !Number.isNaN(Date.parse(entry.createdAt))
+      && !Number.isNaN(Date.parse(entry.updatedAt)),
+  );
+}
+
+function gameStatement(db: D1Database, game: Game): D1PreparedStatement {
+  return db.prepare(
+    `INSERT INTO games (
+      id, name, slug, summary, cover_url, first_release_date, status, category,
+      source_updated_at, source_created_at, is_custom, average_artwork_color,
+      critic_score, critic_score_count, hype, publishers_json, remasters_json, franchises_json, store_links_json, videos_json,
+      platforms_json, genres_json, release_dates_json, cached_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name,
+      slug = excluded.slug,
+      summary = excluded.summary,
+      cover_url = excluded.cover_url,
+      first_release_date = excluded.first_release_date,
+      status = excluded.status,
+      category = excluded.category,
+      source_updated_at = excluded.source_updated_at,
+      source_created_at = excluded.source_created_at,
+      is_custom = excluded.is_custom,
+      average_artwork_color = COALESCE(excluded.average_artwork_color, games.average_artwork_color),
+      critic_score = excluded.critic_score,
+      critic_score_count = excluded.critic_score_count,
+      hype = excluded.hype,
+      publishers_json = excluded.publishers_json,
+      remasters_json = excluded.remasters_json,
+      franchises_json = excluded.franchises_json,
+      store_links_json = excluded.store_links_json,
+      videos_json = excluded.videos_json,
+      platforms_json = excluded.platforms_json,
+      genres_json = excluded.genres_json,
+      release_dates_json = excluded.release_dates_json,
+      cached_at = excluded.cached_at`,
+  ).bind(
+    game.id,
+    game.name,
+    game.slug ?? null,
+    game.summary ?? null,
+    game.coverUrl ?? null,
+    game.firstReleaseDate ?? null,
+    game.status ?? null,
+    game.category ?? null,
+    game.sourceUpdatedAt ?? null,
+    game.sourceCreatedAt ?? null,
+    game.isCustom ? 1 : 0,
+    game.averageArtworkColor ?? null,
+    game.criticScore ?? null,
+    game.criticScoreCount ?? null,
+    game.hype ?? null,
+    JSON.stringify(game.publishers ?? []),
+    JSON.stringify(game.remasters ?? []),
+    JSON.stringify(game.franchises ?? []),
+    JSON.stringify(game.storeLinks ?? []),
+    JSON.stringify(game.videos ?? []),
+    JSON.stringify(game.platforms),
+    JSON.stringify(game.genres),
+    JSON.stringify(game.releaseDates),
+    new Date().toISOString(),
+  );
+}
+
+export async function cacheGames(db: D1Database, games: Game[]): Promise<void> {
+  if (games.length === 0) return;
+  for (let start = 0; start < games.length; start += 100) {
+    await db.batch(games.slice(start, start + 100).map((game) => gameStatement(db, game)));
+  }
+}
+
+export async function getLibrary(db: D1Database): Promise<LibraryItem[]> {
+  const result = await db.prepare(
+    `SELECT
+      g.*,
+      e.status AS entry_status,
+      e.notes,
+      e.personal_rating,
+      e.story_progress,
+      e.overall_progress,
+      e.review,
+      e.completed_at,
+      e.library_platforms_json,
+      e.import_sources,
+      e.tags_json,
+      e.playthroughs_json,
+      e.play_sessions_json,
+      e.friends_json,
+      e.is_up_next,
+      e.manual_order,
+      e.created_at AS entry_created_at,
+      e.updated_at AS entry_updated_at,
+      e.deleted_at
+    FROM library_entries e
+    JOIN games g ON g.id = e.game_id
+    WHERE e.deleted_at IS NULL
+    ORDER BY e.updated_at DESC`,
+  ).all<LibraryRow>();
+  return result.results.map((row) => ({ game: rowToGame(row), entry: rowToEntry(row) }));
+}
+
+const EMPTY_PREFERENCES: UserPreferences = {
+  preferredPlatforms: [],
+  preferredStores: [],
+  followedFranchises: [],
+  updatedAt: "1970-01-01T00:00:00.000Z",
+};
+
+function normalizePreferenceValues(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].slice(0, 100);
+}
+
+function normalizeFollowedFranchises(values: FranchiseRef[]): FranchiseRef[] {
+  const seen = new Set<string>();
+  return values.flatMap((reference) => {
+    const key = `${reference.kind}:${reference.id}`;
+    if (seen.has(key)) return [];
+    seen.add(key);
+    return [{
+      id: reference.id,
+      name: reference.name.trim(),
+      kind: reference.kind,
+      ...(reference.coverUrl ? { coverUrl: reference.coverUrl.trim() } : {}),
+      ...(reference.averageArtworkColor ? { averageArtworkColor: reference.averageArtworkColor.trim() } : {}),
+      ...(reference.publisher ? { publisher: reference.publisher.trim() } : {}),
+    }];
+  }).slice(0, 500);
+}
+
+export async function getPreferences(db: D1Database): Promise<UserPreferences> {
+  const row = await db.prepare(
+    `SELECT preferred_platforms_json, preferred_stores_json, followed_franchises_json, updated_at
+     FROM user_preferences WHERE id = 1`,
+  ).first<PreferencesRow>();
+  if (!row) return EMPTY_PREFERENCES;
+  return {
+    preferredPlatforms: parseArray<string>(row.preferred_platforms_json),
+    preferredStores: parseArray<string>(row.preferred_stores_json),
+    followedFranchises: parseArray<FranchiseRef>(row.followed_franchises_json),
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function savePreferences(
+  db: D1Database,
+  input: Pick<UserPreferences, "preferredPlatforms" | "preferredStores"> & Partial<Pick<UserPreferences, "followedFranchises">>,
+): Promise<UserPreferences> {
+  const current = input.followedFranchises === undefined ? await getPreferences(db) : undefined;
+  const preferences: UserPreferences = {
+    preferredPlatforms: normalizePreferenceValues(input.preferredPlatforms),
+    preferredStores: normalizePreferenceValues(input.preferredStores),
+    followedFranchises: normalizeFollowedFranchises(input.followedFranchises ?? current?.followedFranchises ?? []),
+    updatedAt: new Date().toISOString(),
+  };
+  await db.prepare(
+    `INSERT INTO user_preferences (
+       id, preferred_platforms_json, preferred_stores_json, followed_franchises_json, updated_at
+     ) VALUES (1, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       preferred_platforms_json = excluded.preferred_platforms_json,
+       preferred_stores_json = excluded.preferred_stores_json,
+       followed_franchises_json = excluded.followed_franchises_json,
+       updated_at = excluded.updated_at`,
+  ).bind(
+    JSON.stringify(preferences.preferredPlatforms),
+    JSON.stringify(preferences.preferredStores),
+    JSON.stringify(preferences.followedFranchises),
+    preferences.updatedAt,
+  ).run();
+  return preferences;
+}
+
+export async function getServerRevision(db: D1Database): Promise<number> {
+  const row = await db.prepare(
+    "SELECT COALESCE(MAX(revision), 0) AS revision FROM sync_events",
+  ).first<{ revision: number }>();
+  return row?.revision ?? 0;
+}
+
+export async function pullEvents(
+  db: D1Database,
+  after: number,
+  requestedLimit: number,
+): Promise<PullResponse> {
+  const limit = Math.max(1, Math.min(requestedLimit, 500));
+  const result = await db.prepare(
+    `SELECT revision, event_id, entity, entity_id, operation, payload_json, created_at
+     FROM sync_events
+     WHERE revision > ?
+     ORDER BY revision ASC
+     LIMIT ?`,
+  ).bind(after, limit + 1).all<EventRow>();
+  const hasMore = result.results.length > limit;
+  const rows = result.results.slice(0, limit);
+  const events = rows.map(eventFromRow);
+  return {
+    events,
+    nextCursor: events.at(-1)?.revision ?? after,
+    hasMore,
+  };
+}
+
+async function insertEvent(
+  db: D1Database,
+  eventId: string,
+  entity: "library" | "game",
+  entityId: string,
+  operation: "upsert" | "delete",
+  payload: SyncPayload,
+  createdAt: string,
+): Promise<number> {
+  const inserted = await db.prepare(
+    `INSERT INTO sync_events (event_id, entity, entity_id, operation, payload_json, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)
+     RETURNING revision`,
+  ).bind(
+    eventId,
+    entity,
+    entityId,
+    operation,
+    JSON.stringify(payload),
+    createdAt,
+  ).first<{ revision: number }>();
+  return inserted?.revision ?? 0;
+}
+
+async function applyChange(db: D1Database, change: ClientChange): Promise<PushResult> {
+  const duplicate = await db.prepare(
+    "SELECT revision FROM sync_events WHERE event_id = ?",
+  ).bind(change.id).first<{ revision: number }>();
+  if (duplicate) return { id: change.id, disposition: "duplicate" };
+
+  const existing = await db.prepare(
+    "SELECT updated_at FROM library_entries WHERE game_id = ?",
+  ).bind(change.game.id).first<{ updated_at: string }>();
+  if (existing && existing.updated_at > change.changedAt) {
+    return { id: change.id, disposition: "stale" };
+  }
+
+  await gameStatement(db, change.game).run();
+  const now = new Date().toISOString();
+  if (change.operation === "delete") {
+    const deletedAt = change.changedAt;
+    await db.prepare(
+      `INSERT INTO library_entries (
+        game_id, status, notes, personal_rating, created_at, updated_at, deleted_at
+      ) VALUES (?, 'wishlist', '', NULL, ?, ?, ?)
+      ON CONFLICT(game_id) DO UPDATE SET
+        updated_at = excluded.updated_at,
+        deleted_at = excluded.deleted_at`,
+    ).bind(change.game.id, change.changedAt, change.changedAt, deletedAt).run();
+    await insertEvent(
+      db,
+      change.id,
+      "library",
+      String(change.game.id),
+      "delete",
+      { gameId: change.game.id, deletedAt },
+      now,
+    );
+    return { id: change.id, disposition: "accepted" };
+  }
+
+  const entry = change.entry!;
+  await db.prepare(
+    `INSERT INTO library_entries (
+      game_id, status, notes, personal_rating, story_progress, overall_progress,
+      review, completed_at, library_platforms_json, import_sources,
+      tags_json, playthroughs_json, play_sessions_json, friends_json,
+      is_up_next, manual_order, created_at, updated_at, deleted_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+    ON CONFLICT(game_id) DO UPDATE SET
+      status = excluded.status,
+      notes = excluded.notes,
+      personal_rating = excluded.personal_rating,
+      story_progress = excluded.story_progress,
+      overall_progress = excluded.overall_progress,
+      review = excluded.review,
+      completed_at = excluded.completed_at,
+      library_platforms_json = excluded.library_platforms_json,
+      import_sources = excluded.import_sources,
+      tags_json = excluded.tags_json,
+      playthroughs_json = excluded.playthroughs_json,
+      play_sessions_json = excluded.play_sessions_json,
+      friends_json = excluded.friends_json,
+      is_up_next = excluded.is_up_next,
+      manual_order = excluded.manual_order,
+      updated_at = excluded.updated_at,
+      deleted_at = NULL`,
+  ).bind(
+    entry.gameId,
+    entry.status,
+    entry.notes,
+    entry.personalRating ?? null,
+    entry.storyProgress ?? null,
+    entry.overallProgress ?? null,
+    entry.review ?? null,
+    entry.completedAt ?? null,
+    JSON.stringify(entry.libraryPlatforms ?? []),
+    entry.importSources ?? null,
+    JSON.stringify(entry.tags ?? []),
+    JSON.stringify(entry.playthroughs ?? []),
+    JSON.stringify(entry.playSessions ?? []),
+    JSON.stringify(entry.friends ?? []),
+    entry.isUpNext ? 1 : 0,
+    entry.manualOrder ?? null,
+    entry.createdAt,
+    entry.updatedAt,
+  ).run();
+  await insertEvent(
+    db,
+    change.id,
+    "library",
+    String(change.game.id),
+    "upsert",
+    { game: change.game, entry },
+    now,
+  );
+  return { id: change.id, disposition: "accepted" };
+}
+
+export async function applyChanges(
+  db: D1Database,
+  changes: ClientChange[],
+): Promise<PushResult[]> {
+  const results: PushResult[] = [];
+  for (const change of changes) {
+    results.push(await applyChange(db, change));
+  }
+  return results;
+}
+
+export async function trackedGameRows(db: D1Database): Promise<GameRow[]> {
+  const result = await db.prepare(
+    `SELECT g.*
+     FROM games g
+     JOIN library_entries e ON e.game_id = g.id
+     WHERE e.deleted_at IS NULL AND g.id > 0 AND g.is_custom = 0`,
+  ).all<GameRow>();
+  return result.results;
+}
+
+export async function recordGameRefreshes(
+  db: D1Database,
+  oldRows: GameRow[],
+  freshGames: Game[],
+): Promise<number> {
+  const oldById = new Map(oldRows.map((row) => [row.id, row]));
+  await cacheGames(db, freshGames);
+  const eventStatements: D1PreparedStatement[] = [];
+  for (const game of freshGames) {
+    const old = oldById.get(game.id);
+    const releaseDatesChanged = old?.release_dates_json !== JSON.stringify(game.releaseDates);
+    const sourceChanged = old?.source_updated_at !== (game.sourceUpdatedAt ?? null);
+    const discoveryChanged = old?.critic_score !== (game.criticScore ?? null)
+      || old?.hype !== (game.hype ?? null)
+      || old?.publishers_json !== JSON.stringify(game.publishers ?? [])
+      || old?.remasters_json !== JSON.stringify(game.remasters ?? [])
+      || old?.franchises_json !== JSON.stringify(game.franchises ?? [])
+      || old?.store_links_json !== JSON.stringify(game.storeLinks ?? [])
+      || old?.videos_json !== JSON.stringify(game.videos ?? []);
+    if (!old || releaseDatesChanged || sourceChanged || discoveryChanged) {
+      eventStatements.push(db.prepare(
+        `INSERT INTO sync_events (event_id, entity, entity_id, operation, payload_json, created_at)
+         VALUES (?, 'game', ?, 'upsert', ?, ?)`,
+      ).bind(
+        crypto.randomUUID(),
+        String(game.id),
+        JSON.stringify({ game }),
+        new Date().toISOString(),
+      ));
+    }
+  }
+  for (let start = 0; start < eventStatements.length; start += 100) {
+    await db.batch(eventStatements.slice(start, start + 100));
+  }
+  return eventStatements.length;
+}

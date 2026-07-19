@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11110f" />
+    <meta name="description" content="How GameVault stores local and optional cloud data." />
+    <title>GameVault privacy</title>
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="docs.css" />
+  </head>
+  <body>
+    <header class="doc-header"><div class="doc-shell"><a class="doc-brand" href="./"><img src="assets/icon.svg" width="32" height="32" alt="" />GameVault</a><a class="back-link" href="./">← Download page</a></div></header>
+    <main class="doc-main"><div class="doc-shell">
+      <p class="doc-eyebrow">Privacy</p>
+      <h1>Local first means local.</h1>
+      <p class="doc-lede">GameVault needs no account to begin. Your collection stays on the device unless you deliberately connect your own cloud.</p>
+
+      <section class="doc-section"><h2>On-device mode</h2><p>Local entries, notes, ratings, tags, play sessions, friend labels, and preferences are not sent to a GameVault account because there is no GameVault account. Live web metadata and external trailer links naturally require a network connection when used.</p></section>
+      <section class="doc-section"><h2>Optional cloud</h2><p>The setup kit deploys to the user's own Cloudflare account. It uses one personal bearer token and is designed for one owner. IGDB credentials stay in Cloudflare Worker secrets; they are not bundled into the APK, IPA, web app, screenshots, or this repository.</p><div class="doc-card"><strong>Do not share a sync token.</strong><p>A token holder can read and change the complete library stored in that cloud. Each person should create their own cloud.</p></div></section>
+      <section class="doc-section"><h2>This download page</h2><p>The page contains no analytics, advertising, account system, or tracking script. GitHub may process standard hosting data under its own policies. The screenshots use a synthetic demonstration library and contain no personal notes or cloud credentials.</p></section>
+      <section class="doc-section"><h2>External services</h2><ul><li>GitHub hosts this page and its download files.</li><li>Cloudflare hosts the optional web app and any cloud a user chooses to deploy.</li><li>IGDB provides optional game metadata through the user's Worker.</li><li>YouTube hosts linked trailers.</li><li>Apple/SideStore/AltStore or Android handles installation.</li></ul><p>GameVault is not affiliated with those services or with game publishers.</p></section>
+    </div></main>
+    <footer class="doc-footer"><div class="doc-shell">GameVault · No analytics · No account required</div></footer>
+  </body>
+</html>

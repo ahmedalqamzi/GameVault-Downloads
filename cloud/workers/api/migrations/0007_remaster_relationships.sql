@@ -1,0 +1,1 @@
+ALTER TABLE games ADD COLUMN remasters_json TEXT NOT NULL DEFAULT '[]';

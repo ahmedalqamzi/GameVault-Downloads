@@ -1,0 +1,5 @@
+# Copy this file to .dev.vars only for local development.
+# Never commit the real values.
+SYNC_TOKEN=replace-with-a-long-random-token
+IGDB_CLIENT_ID=
+IGDB_CLIENT_SECRET=
