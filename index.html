@@ -64,7 +64,7 @@
             <p class="eyebrow"><span></span> Local first. Cloud when you want it.</p>
             <h1>Your whole game life, <em>finally in view.</em></h1>
             <p class="hero-lede">
-              Keep releases, backlogs, wishlists, franchise timelines, trailers, and play history together—without needing an account to begin.
+              Keep releases, backlogs, wishlists, franchise timelines, trailers, and play history together. Install once; game data updates automatically with no account or PC setup.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="downloads/GameVault-Android.apk" download data-smart-download>
@@ -108,7 +108,7 @@
         <div class="shell proof-strip reveal" data-delay="2">
           <div><strong>Phone-only mode</strong><span>Works without a server</span></div>
           <div><strong>Private by design</strong><span>Your library stays yours</span></div>
-          <div><strong>Optional autosync</strong><span>Bring your own cloud</span></div>
+          <div><strong>Automatic game data</strong><span>No token or PC required</span></div>
           <div><strong>Real release data</strong><span>Artwork, dates, and trailers</span></div>
         </div>
       </section>
@@ -192,8 +192,8 @@
               <div class="feature-icon">
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 17v3h16v-3M12 4v12m0 0 4-4m-4 4-4-4" /></svg>
               </div>
-              <h3>Bring your old library</h3>
-              <p>Import the previous Gamery spreadsheet as CSV. Ratings, progress, reviews, dates, platforms, and folders are retained.</p>
+              <h3>Import, back up, and restore</h3>
+              <p>Import the previous Gamery spreadsheet, then export a private full-library backup whenever you want. Ratings, progress, reviews, dates, platforms, and folders are retained.</p>
               <div class="import-chip"><span>CSV</span><strong>Ready to import</strong><i>✓</i></div>
             </article>
           </div>
@@ -228,8 +228,8 @@
               <span><b>Collection</b><small>Folders, filters, grouping, and sorting</small></span>
             </button>
             <button class="shot reveal" data-delay="1" type="button" data-shot="2" aria-label="Enlarge settings screenshot">
-              <img src="assets/screenshots/settings.png" width="1440" height="960" alt="Settings for local mode, CSV import, platforms, stores, and optional cloud sync" loading="lazy" />
-              <span><b>Settings</b><small>Local mode, import, and preferences</small></span>
+              <img src="assets/screenshots/settings.png" width="1440" height="960" alt="Settings for local backup and restore, CSV import, automatic metadata, preferences, and optional cloud sync" loading="lazy" />
+              <span><b>Settings</b><small>Backup, restore, import, and preferences</small></span>
             </button>
           </div>
 
@@ -285,7 +285,7 @@
                 <ol class="steps">
                   <li><span>1</span><div><strong>Download the APK</strong><p>Tap the button and open the file from your browser's downloads.</p></div></li>
                   <li><span>2</span><div><strong>Allow this install</strong><p>If Android asks, allow “Install unknown apps” for the browser or Files app you used.</p></div></li>
-                  <li><span>3</span><div><strong>Open GameVault</strong><p>It starts in phone-only mode. Add games or import a Gamery CSV immediately.</p></div></li>
+                  <li><span>3</span><div><strong>Open GameVault</strong><p>That is it. Search, covers, dates, scores, franchises, and trailers work automatically—no token or PC setup.</p></div></li>
                 </ol>
               </div>
               <div class="download-card">
@@ -294,8 +294,8 @@
                 <h3>GameVault APK</h3>
                 <p>Signed release build · 1.3 MB</p>
                 <a class="button button-primary button-full" href="downloads/GameVault-Android.apk" download>Download APK</a>
-                <div class="checksum"><span>SHA-256</span><code>2eeedea669b438bfc…</code><button type="button" data-copy="2eeedea669b438bfc8fb975c02d0d3712c0a61e41690db254da51fe26904b564" aria-label="Copy Android checksum">Copy</button></div>
-                <p class="card-note">Direct install, outside Google Play. Future versions signed with the same key can update this copy.</p>
+                <div class="checksum"><span>SHA-256</span><code>a12cd39ea7f79d4b…</code><button type="button" data-copy="a12cd39ea7f79d4b79ca3e009cea24c3d75687673765c39c58cbdcda2d3b584b" aria-label="Copy Android checksum">Copy</button></div>
+                <p class="card-note">Install future versions over this copy to keep your saved library. Settings also includes a full JSON backup and restore.</p>
               </div>
             </div>
 
@@ -337,7 +337,7 @@
                 <h3>GameVault Web</h3>
                 <p>Installable PWA · always current</p>
                 <a class="button button-primary button-full" href="https://gamevault-dp0.pages.dev" target="_blank" rel="noreferrer">Open web app</a>
-                <p class="card-note">The hosted app opens without a sync token. Your local library remains in that browser unless you connect your own cloud.</p>
+                <p class="card-note">The hosted app opens without a sync token and keeps game metadata current. Your library remains local unless you connect cloud sync.</p>
               </div>
             </div>
           </div>
@@ -355,8 +355,8 @@
             <span class="mode-label">Easiest</span>
             <div class="mode-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3" /><path d="M10 18h4" /></svg></div>
             <h3>Phone only</h3>
-            <p>Install and start. Games, folders, notes, preferences, and imported CSV data stay on that device.</p>
-            <ul class="check-list"><li>No account</li><li>No server</li><li>No subscription</li><li>Works offline</li></ul>
+            <p>Install and start. Personal data stays on that device; read-only game metadata updates automatically whenever you are online.</p>
+            <ul class="check-list"><li>No account or token</li><li>No PC setup</li><li>Full backup export</li><li>Works offline</li></ul>
             <a class="button button-secondary button-full" href="#install">Choose an installer</a>
           </div>
           <div class="mode-card cloud-mode reveal" data-delay="1">
@@ -364,7 +364,7 @@
             <div class="mode-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .6-8A6 6 0 0 0 6.2 8.2 5 5 0 0 0 7 18Z" /><path d="M9 14h6m-3-3v6" /></svg></div>
             <h3>Your own cloud</h3>
             <p>Deploy a private Cloudflare Worker + D1 database, create your own token, then enter its URL and token in Settings.</p>
-            <ul class="check-list"><li>Backup and autosync</li><li>Same library on several devices</li><li>IGDB artwork, dates, and search</li><li>You control the token</li></ul>
+            <ul class="check-list"><li>Off-device backup and autosync</li><li>Same library on several devices</li><li>Private notes stay protected</li><li>You control the token</li></ul>
             <div class="button-stack">
               <a class="button button-primary button-full" href="downloads/GameVault-Cloud-Setup.zip" download>Download cloud setup kit</a>
               <a class="text-link centered" href="CLOUD_SETUP.html">Read the setup guide <span>→</span></a>
@@ -388,11 +388,15 @@
           <div class="faq-list reveal" data-delay="1">
             <details open>
               <summary>Does it work without any online service?<span></span></summary>
-              <p>Yes. Android, iPhone, and the installed web app can keep an on-device library without an account or server. Live search, new artwork, updated dates, and cloud backup need internet access.</p>
+              <p>Yes. Android and the installed web app keep an on-device library without an account, token, PC, or personal server. Game search and metadata need internet, but work automatically through the built-in read-only service. Private cloud backup is optional.</p>
             </details>
             <details>
               <summary>Can I import my previous spreadsheet?<span></span></summary>
               <p>Yes. Export the Gamery library as CSV, then import it from Settings in Android or the web app. GameVault preserves mapped folders, ratings, reviews, progress, dates, summaries, and platforms.</p>
+            </details>
+            <details>
+              <summary>Will an APK update erase my library?<span></span></summary>
+              <p>No. Install the newer signed APK over the existing app and Android retains its data. Do not uninstall first. For an extra copy or a new phone, use Settings → Export full backup, then restore that JSON file.</p>
             </details>
             <details>
               <summary>Are trailers linked for every game?<span></span></summary>

@@ -1,6 +1,6 @@
 # GameVault personal cloud setup kit
 
-This kit deploys a private GameVault sync API to your own Cloudflare account. The app works without it; use this only for backup, multiple devices, or live IGDB metadata.
+This kit deploys a private GameVault sync API to your own Cloudflare account. The app already has read-only metadata; use this kit only for off-device backup, autosync, multiple devices, or your own IGDB proxy.
 
 ## Before you start
 
@@ -60,7 +60,7 @@ The generated token is stored locally in `.gamevault-sync-token`, which is exclu
 - A Cloudflare Worker API
 - A private D1 database
 - Revision-based autosync between your devices
-- Optional IGDB metadata refresh every six hours
+- Optional rate-limited IGDB metadata proxy and refresh every six hours
 - JSON export endpoint for backups
 
 GameVault remains usable from its local cache when the cloud is temporarily unavailable.

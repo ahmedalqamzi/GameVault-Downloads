@@ -6,7 +6,8 @@ Use a personal cloud when you want:
 
 - Backup outside one device
 - Autosync between your phone, web app, and other installations
-- IGDB-powered search, artwork, release dates, scores, and trailer links
+
+The installed APK already gets IGDB-powered search, artwork, release dates, scores, and trailer links without a personal cloud or token. Adding IGDB credentials to your own Worker is optional; the app falls back to its built-in read-only metadata service if your Worker has none.
 
 ## The easiest route
 

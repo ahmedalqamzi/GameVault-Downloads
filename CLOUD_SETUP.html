@@ -18,7 +18,7 @@
 
       <section class="doc-section">
         <h2>What you need</h2>
-        <ul><li>A Windows, macOS, or Linux computer</li><li>Node.js 22 or newer</li><li>A free Cloudflare account</li><li>About 10 minutes</li><li>Optional Twitch/IGDB credentials for live game metadata</li></ul>
+        <ul><li>A Windows, macOS, or Linux computer</li><li>Node.js 22 or newer</li><li>A free Cloudflare account</li><li>About 10 minutes</li><li>Optional Twitch/IGDB credentials only if you want your own metadata proxy</li></ul>
         <div class="doc-card"><strong>Your app does not wait for this.</strong><p>Install GameVault and use phone-only mode immediately. You can connect cloud later without reinstalling.</p></div>
       </section>
 
@@ -43,8 +43,8 @@
       </section>
 
       <section class="doc-section">
-        <h2>Add game metadata</h2>
-        <p>Live search, refreshed artwork, dates, scores, and trailers use IGDB. Create Twitch application credentials using the <a href="https://api-docs.igdb.com/#account-creation" target="_blank" rel="noreferrer">official IGDB authentication guide</a>. The setup helper can store them as Worker secrets without putting them in source files.</p>
+        <h2>Optional: use your own metadata proxy</h2>
+        <p>The installed app already receives live search, refreshed artwork, dates, scores, and trailers without a personal cloud. To proxy IGDB through your own Worker instead, create Twitch application credentials using the <a href="https://api-docs.igdb.com/#account-creation" target="_blank" rel="noreferrer">official IGDB authentication guide</a>. The setup helper stores them as Worker secrets. Without them, the app falls back to its built-in read-only metadata service.</p>
       </section>
 
       <section class="doc-section">

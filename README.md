@@ -10,15 +10,17 @@ Public downloads, screenshots, and install instructions for GameVault.
 
 | Platform | File | SHA-256 |
 | --- | --- | --- |
-| Android 8+ | [GameVault-Android.apk](downloads/GameVault-Android.apk) | `2eeedea669b438bfc8fb975c02d0d3712c0a61e41690db254da51fe26904b564` |
+| Android 8+ | [GameVault-Android.apk](downloads/GameVault-Android.apk) | `a12cd39ea7f79d4b79ca3e009cea24c3d75687673765c39c58cbdcda2d3b584b` |
 | iOS 17+ | [GameVault-iOS-unsigned.ipa](downloads/GameVault-iOS-unsigned.ipa) | `fd09c641ee07fc401cd188b50648bfa65bf5b539e6f682bc84553bd222951227` |
-| Optional cloud | [GameVault-Cloud-Setup.zip](downloads/GameVault-Cloud-Setup.zip) | `2e616c5fb8d45f41122c845e380139dfdcc3ecad7e0ebba2a9349349906556bb` |
+| Optional cloud | [GameVault-Cloud-Setup.zip](downloads/GameVault-Cloud-Setup.zip) | `0086f09fdfcfe56acab768aa64aec6fe4fb271206e779157b84c32c7b5cca7b9` |
 
 The Android APK is a signed direct-install build. The iPhone IPA is unsigned and must be installed with SideStore, AltStore, or another sideloading tool. Free Apple signing normally needs refreshing every seven days.
 
 ## Use it without a server
 
-GameVault starts in phone-only mode. Add games manually or import a Gamery CSV in Android or the installable web app. The library stays on that device unless you configure cloud sync.
+GameVault starts in phone-only mode. Install once and live search, covers, dates, scores, franchises, stores, and available trailers work automatically while online—no PC, account, or token setup. Personal library data stays on that device unless cloud sync is configured.
+
+Signed APK updates retain the existing Android library when installed over the old version. Settings can also export and restore a complete local JSON backup without including the private sync token.
 
 ## Optional private cloud
 

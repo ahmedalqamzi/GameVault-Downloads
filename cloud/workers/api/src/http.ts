@@ -18,12 +18,13 @@ export function corsHeaders(request: Request, env: Env): HeadersInit {
 
   return {
     ...(allowOrigin ? { "access-control-allow-origin": allowOrigin } : {}),
-    "access-control-allow-headers": "authorization, content-type",
+    "access-control-allow-headers": "authorization, content-type, x-gamevault-client",
     "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
     "access-control-max-age": "86400",
     vary: "Origin",
   };
 }
+
 export function json(
   request: Request,
   env: Env,

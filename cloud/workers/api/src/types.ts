@@ -1,5 +1,6 @@
 export interface Env {
   DB: D1Database;
+  METADATA_RATE_LIMITER?: RateLimit;
   SYNC_TOKEN?: string;
   IGDB_CLIENT_ID?: string;
   IGDB_CLIENT_SECRET?: string;

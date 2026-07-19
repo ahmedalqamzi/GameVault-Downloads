@@ -2,7 +2,9 @@
 
 ## Local by default
 
-GameVault can keep the library entirely on the installed device. No account is required. Local entries, notes, ratings, tags, play sessions, friend labels, and preferences are not sent anywhere unless the owner configures cloud sync.
+GameVault can keep the personal library entirely on the installed device. No account is required. Local folders, notes, ratings, tags, progress, play sessions, friend labels, and preferences are not sent to the metadata service. Local JSON backups also omit the private sync token.
+
+Live catalog and metadata requests send only the search text or IGDB game IDs needed for the request to the hosted Cloudflare Worker. A random installation identifier and ordinary network information are used for rate limiting; they are not a GameVault account and are not combined with library entries or personal notes.
 
 ## Optional cloud
 
@@ -20,7 +22,7 @@ The screenshots use a synthetic demonstration library. This repository contains 
 
 - GitHub hosts this page and the public download files.
 - Cloudflare hosts the optional web app and any personal cloud a user chooses to deploy.
-- IGDB provides optional game metadata through the user's Worker credentials.
+- The hosted Cloudflare Worker proxies read-only IGDB game metadata; a separately configured personal Worker can provide private library sync.
 - YouTube hosts linked trailers.
 - Apple/SideStore/AltStore or Android handles installation on the device.
 

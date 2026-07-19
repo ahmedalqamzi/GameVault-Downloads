@@ -78,6 +78,112 @@ function monthRange(value: string): { start: number; end: number } | undefined {
   };
 }
 
+export function parseGameIds(value: string | null): number[] | undefined {
+  if (!value) return undefined;
+  const parts = value.split(",");
+  if (parts.length === 0 || parts.length > 100) return undefined;
+  const ids: number[] = [];
+  for (const part of parts) {
+    if (!/^\d+$/.test(part)) return undefined;
+    const id = Number(part);
+    if (!Number.isSafeInteger(id) || id <= 0) return undefined;
+    if (!ids.includes(id)) ids.push(id);
+  }
+  return ids.length > 0 ? ids : undefined;
+}
+
+function metadataClientKey(request: Request): string {
+  const installation = request.headers.get("x-gamevault-client")?.trim() ?? "";
+  const validInstallation = /^[a-zA-Z0-9._:-]{8,100}$/.test(installation)
+    ? installation
+    : "unknown-installation";
+  const address = request.headers.get("cf-connecting-ip")?.trim() || "unknown-address";
+  return `${address}:${validInstallation}`;
+}
+
+async function routePublicMetadata(
+  request: Request,
+  env: Env,
+  path: string,
+  url: URL,
+): Promise<Response | undefined> {
+  const supported = request.method === "GET" && new Set([
+    "/v1/games/search",
+    "/v1/games/discover",
+    "/v1/games/calendar",
+    "/v1/games/franchise",
+    "/v1/games/metadata",
+  ]).has(path);
+  if (!supported) return undefined;
+
+  if (!env.IGDB_CLIENT_ID || !env.IGDB_CLIENT_SECRET) {
+    return apiError(request, env, 503, "metadata_not_configured", "Game metadata is not configured yet.");
+  }
+  if (env.METADATA_RATE_LIMITER) {
+    const outcome = await env.METADATA_RATE_LIMITER.limit({ key: metadataClientKey(request) });
+    if (!outcome.success) {
+      return apiError(request, env, 429, "rate_limited", "Too many metadata requests. Try again in a minute.");
+    }
+  }
+
+  if (path === "/v1/games/search") {
+    const query = url.searchParams.get("q")?.trim() ?? "";
+    if (query.length < 2 || query.length > 120) {
+      return apiError(request, env, 400, "invalid_query", "Search must be 2–120 characters.");
+    }
+    const games = await searchGames(env, query);
+    await cacheGames(env.DB, games);
+    return json(request, env, { games } satisfies SearchResponse, {
+      headers: { "cache-control": "public, max-age=60" },
+    });
+  }
+
+  if (path === "/v1/games/discover") {
+    const kind = url.searchParams.get("kind") === "upcoming" ? "upcoming" : "new";
+    const games = await discoverGames(env, kind);
+    await cacheGames(env.DB, games);
+    return json(request, env, { games } satisfies SearchResponse, {
+      headers: { "cache-control": "public, max-age=900" },
+    });
+  }
+
+  if (path === "/v1/games/calendar") {
+    const month = url.searchParams.get("month") ?? "";
+    const range = monthRange(month);
+    if (!range) {
+      return apiError(request, env, 400, "invalid_month", "Month must use YYYY-MM format.");
+    }
+    const games = await calendarGames(env, range.start, range.end);
+    await cacheGames(env.DB, games);
+    return json(request, env, { games } satisfies SearchResponse, {
+      headers: { "cache-control": "public, max-age=900" },
+    });
+  }
+
+  if (path === "/v1/games/franchise") {
+    const id = Number.parseInt(url.searchParams.get("id") ?? "", 10);
+    const kind = url.searchParams.get("kind") === "collection" ? "collection" : "franchise";
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return apiError(request, env, 400, "invalid_franchise", "A valid franchise ID is required.");
+    }
+    const games = await gamesInFranchise(env, id, kind);
+    await cacheGames(env.DB, games);
+    return json(request, env, { games } satisfies SearchResponse, {
+      headers: { "cache-control": "public, max-age=900" },
+    });
+  }
+
+  const ids = parseGameIds(url.searchParams.get("ids"));
+  if (!ids) {
+    return apiError(request, env, 400, "invalid_game_ids", "Provide 1–100 comma-separated game IDs.");
+  }
+  const games = await gamesByIds(env, ids);
+  await cacheGames(env.DB, games);
+  return json(request, env, { games } satisfies SearchResponse, {
+    headers: { "cache-control": "public, max-age=3600" },
+  });
+}
+
 function isValidChange(change: ClientChange): boolean {
   if (
     !change
@@ -103,6 +209,9 @@ async function route(request: Request, env: Env): Promise<Response> {
       time: new Date().toISOString(),
     });
   }
+
+  const metadataResponse = await routePublicMetadata(request, env, path, url);
+  if (metadataResponse) return metadataResponse;
 
   if (!env.SYNC_TOKEN) {
     return apiError(request, env, 503, "not_configured", "The sync token is not configured.");
@@ -167,50 +276,6 @@ async function route(request: Request, env: Env): Promise<Response> {
     return json(request, env, response);
   }
 
-  if (path === "/v1/games/search" && request.method === "GET") {
-    const query = url.searchParams.get("q")?.trim() ?? "";
-    if (query.length < 2 || query.length > 120) {
-      return apiError(request, env, 400, "invalid_query", "Search must be 2–120 characters.");
-    }
-    const games = await searchGames(env, query);
-    await cacheGames(env.DB, games);
-    const body: SearchResponse = { games };
-    return json(request, env, body, { headers: { "cache-control": "private, max-age=60" } });
-  }
-
-  if (path === "/v1/games/discover" && request.method === "GET") {
-    const requestedKind = url.searchParams.get("kind");
-    const kind = requestedKind === "upcoming" ? "upcoming" : "new";
-    const games = await discoverGames(env, kind);
-    await cacheGames(env.DB, games);
-    const body: SearchResponse = { games };
-    return json(request, env, body, { headers: { "cache-control": "private, max-age=900" } });
-  }
-
-  if (path === "/v1/games/calendar" && request.method === "GET") {
-    const month = url.searchParams.get("month") ?? "";
-    const range = monthRange(month);
-    if (!range) {
-      return apiError(request, env, 400, "invalid_month", "Month must use YYYY-MM format.");
-    }
-    const games = await calendarGames(env, range.start, range.end);
-    await cacheGames(env.DB, games);
-    const body: SearchResponse = { games };
-    return json(request, env, body, { headers: { "cache-control": "private, max-age=900" } });
-  }
-
-  if (path === "/v1/games/franchise" && request.method === "GET") {
-    const id = Number.parseInt(url.searchParams.get("id") ?? "", 10);
-    const kind = url.searchParams.get("kind") === "collection" ? "collection" : "franchise";
-    if (!Number.isSafeInteger(id) || id <= 0) {
-      return apiError(request, env, 400, "invalid_franchise", "A valid franchise ID is required.");
-    }
-    const games = await gamesInFranchise(env, id, kind);
-    await cacheGames(env.DB, games);
-    const body: SearchResponse = { games };
-    return json(request, env, body, { headers: { "cache-control": "private, max-age=900" } });
-  }
-
   if (path === "/v1/refresh" && request.method === "POST") {
     return json(request, env, await refreshTrackedGames(env, true), {
       headers: { "cache-control": "no-store" },
@@ -270,4 +335,4 @@ export default {
   },
 } satisfies ExportedHandler<Env>;
 
-export { isValidPreferenceList, monthRange, refreshTrackedGames, route };
+export { isValidPreferenceList, monthRange, refreshTrackedGames, route, routePublicMetadata };
