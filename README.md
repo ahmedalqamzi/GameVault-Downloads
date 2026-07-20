@@ -10,7 +10,7 @@ Public downloads, screenshots, and install instructions for GameVault.
 
 | Platform | File | SHA-256 |
 | --- | --- | --- |
-| Android 8+ | [GameVault-Android.apk](downloads/GameVault-Android.apk) | `a12cd39ea7f79d4b79ca3e009cea24c3d75687673765c39c58cbdcda2d3b584b` |
+| Android 8+ | [GameVault-Android.apk](downloads/GameVault-Android.apk) | `230699d29d2da6faf014b8751ddf4ab130a3f4e2bc0c801e917c5def3161079c` |
 | iOS 17+ | [GameVault-iOS-unsigned.ipa](downloads/GameVault-iOS-unsigned.ipa) | `fd09c641ee07fc401cd188b50648bfa65bf5b539e6f682bc84553bd222951227` |
 | Optional cloud | [GameVault-Cloud-Setup.zip](downloads/GameVault-Cloud-Setup.zip) | `0086f09fdfcfe56acab768aa64aec6fe4fb271206e779157b84c32c7b5cca7b9` |
 
