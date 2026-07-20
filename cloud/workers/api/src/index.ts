@@ -265,7 +265,7 @@ async function routePublicSteam(
         return apiError(request, env, 429, "rate_limited", "Too many Steam metadata requests. Try again in a minute.");
       }
     }
-    const apps = await steamAppsMetadata(appIDs);
+    const apps = await steamAppsMetadata(appIDs, env.DB);
     return json(request, env, { apps } satisfies SteamAppsResponse, {
       headers: { "cache-control": "no-store" },
     });

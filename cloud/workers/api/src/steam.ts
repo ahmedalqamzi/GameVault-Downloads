@@ -6,7 +6,7 @@ import type {
   SteamSyncResponse,
 } from "@gamevault/shared";
 import { gamesBySteamAppIds } from "./igdb";
-import type { Env } from "./types";
+import type { Env, SteamAppMetadataRow } from "./types";
 
 interface SteamOwnedGame {
   appid?: number;
@@ -47,6 +47,11 @@ interface ProtonSummary {
   confidence?: string;
 }
 
+interface SourceResult<T> {
+  reachedSource: boolean;
+  value?: T;
+}
+
 const STEAM_OPENID_ENDPOINT = "https://steamcommunity.com/openid/login";
 const PROTON_TIERS = new Set<LinuxSupport>([
   "platinum",
@@ -57,6 +62,7 @@ const PROTON_TIERS = new Set<LinuxSupport>([
   "pending",
 ]);
 const FILTER_CATEGORY_IDS = new Set([1, 2, 9, 20, 27, 36, 37, 38, 39, 49]);
+const STEAM_METADATA_DATABASE_TTL_MS = 30 * 86_400_000;
 
 function uniqueNames(values: Array<string | undefined>): string[] {
   return [...new Set(values.flatMap((value) => {
@@ -65,8 +71,12 @@ function uniqueNames(values: Array<string | undefined>): string[] {
   }))].sort((left, right) => left.localeCompare(right));
 }
 
-async function cachedFetch(url: string): Promise<Response> {
-  const request = new Request(url, { headers: { accept: "application/json" } });
+async function cachedFetch(
+  url: string,
+  accept = "application/json",
+  headers: Record<string, string> = {},
+): Promise<Response> {
+  const request = new Request(url, { headers: { accept, ...headers } });
   const workerCache = typeof caches === "undefined"
     ? undefined
     : (caches as CacheStorage & { default: Cache }).default;
@@ -87,19 +97,162 @@ async function cachedFetch(url: string): Promise<Response> {
   return response;
 }
 
-async function protonSummary(appID: number): Promise<ProtonSummary | undefined> {
+function parseStringArray(value: string): string[] {
   try {
-    const response = await cachedFetch(`https://www.protondb.com/api/v1/reports/summaries/${appID}.json`);
-    return response.ok ? await response.json() as ProtonSummary : undefined;
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? uniqueNames(parsed.map((item) => typeof item === "string" ? item : undefined))
+      : [];
   } catch {
-    return undefined;
+    return [];
   }
 }
 
-async function steamAppMetadata(appID: number): Promise<SteamAppMetadata> {
-  const syncedAt = new Date().toISOString();
-  let store: SteamStoreEnvelope | undefined;
+function rowToSteamMetadata(row: SteamAppMetadataRow): SteamAppMetadata {
+  const controllerSupport = row.controller_support === "full" || row.controller_support === "partial"
+    ? row.controller_support
+    : undefined;
+  const rawLinux = row.linux_support as LinuxSupport | null;
+  const linuxSupport = rawLinux && (rawLinux === "native" || PROTON_TIERS.has(rawLinux))
+    ? rawLinux
+    : undefined;
+  return {
+    appId: row.app_id,
+    steamGenres: parseStringArray(row.steam_genres_json),
+    steamFeatures: parseStringArray(row.steam_features_json),
+    steamTags: parseStringArray(row.steam_tags_json),
+    ...(controllerSupport ? { controllerSupport } : {}),
+    ...(linuxSupport ? { linuxSupport } : {}),
+    ...(row.proton_confidence ? { protonConfidence: row.proton_confidence } : {}),
+    syncedAt: row.synced_at,
+  };
+}
+
+async function readSteamMetadata(
+  db: D1Database | undefined,
+  appIDs: number[],
+): Promise<Map<number, SteamAppMetadata>> {
+  if (!db || appIDs.length === 0) return new Map();
   try {
+    const placeholders = appIDs.map(() => "?").join(",");
+    const rows = await db.prepare(
+      `SELECT * FROM steam_app_metadata WHERE app_id IN (${placeholders})`,
+    ).bind(...appIDs).all<SteamAppMetadataRow>();
+    const cutoff = Date.now() - STEAM_METADATA_DATABASE_TTL_MS;
+    return new Map((rows.results ?? []).flatMap((row) => {
+      const syncedAt = Date.parse(row.synced_at);
+      return Number.isFinite(syncedAt) && syncedAt >= cutoff
+        ? [[row.app_id, rowToSteamMetadata(row)] as const]
+        : [];
+    }));
+  } catch {
+    // Keep metadata functional during a rolling deploy before the additive table exists.
+    return new Map();
+  }
+}
+
+async function writeSteamMetadata(
+  db: D1Database | undefined,
+  apps: SteamAppMetadata[],
+): Promise<void> {
+  if (!db || apps.length === 0) return;
+  try {
+    await db.batch(apps.map((app) => db.prepare(
+      `INSERT INTO steam_app_metadata (
+        app_id, steam_genres_json, steam_features_json, steam_tags_json,
+        controller_support, linux_support, proton_confidence, synced_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(app_id) DO UPDATE SET
+        steam_genres_json = excluded.steam_genres_json,
+        steam_features_json = excluded.steam_features_json,
+        steam_tags_json = excluded.steam_tags_json,
+        controller_support = excluded.controller_support,
+        linux_support = excluded.linux_support,
+        proton_confidence = excluded.proton_confidence,
+        synced_at = excluded.synced_at`,
+    ).bind(
+      app.appId,
+      JSON.stringify(app.steamGenres),
+      JSON.stringify(app.steamFeatures),
+      JSON.stringify(app.steamTags),
+      app.controllerSupport ?? null,
+      app.linuxSupport ?? null,
+      app.protonConfidence ?? null,
+      app.syncedAt,
+    )));
+  } catch {
+    // Live metadata is still returned if a transient D1 write fails.
+  }
+}
+
+export function parseSteamStoreTags(html: string): string[] {
+  const marker = "InitAppTagModal(";
+  const markerIndex = html.indexOf(marker);
+  if (markerIndex < 0) return [];
+  const arrayStart = html.indexOf("[", markerIndex + marker.length);
+  if (arrayStart < 0) return [];
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = arrayStart; index < html.length; index += 1) {
+    const character = html[index]!;
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+      continue;
+    }
+    if (character === '"') inString = true;
+    else if (character === "[") depth += 1;
+    else if (character === "]") {
+      depth -= 1;
+      if (depth === 0) {
+        try {
+          const tags = JSON.parse(html.slice(arrayStart, index + 1)) as unknown;
+          if (!Array.isArray(tags)) return [];
+          return uniqueNames(tags.slice(0, 100).map((item) => (
+            item && typeof item === "object" && typeof (item as { name?: unknown }).name === "string"
+              ? (item as { name: string }).name
+              : undefined
+          )));
+        } catch {
+          return [];
+        }
+      }
+    }
+  }
+  return [];
+}
+
+async function steamStoreTags(appID: number): Promise<SourceResult<string[]>> {
+  try {
+    const response = await cachedFetch(
+      `https://store.steampowered.com/app/${appID}/?l=english&cc=us`,
+      "text/html",
+      { cookie: "birthtime=315532801; lastagecheckage=1-January-1980" },
+    );
+    return response.ok
+      ? { reachedSource: true, value: parseSteamStoreTags(await response.text()) }
+      : { reachedSource: false };
+  } catch {
+    return { reachedSource: false };
+  }
+}
+
+async function protonSummary(appID: number): Promise<SourceResult<ProtonSummary>> {
+  try {
+    const response = await cachedFetch(`https://www.protondb.com/api/v1/reports/summaries/${appID}.json`);
+    if (response.ok) return { reachedSource: true, value: await response.json() as ProtonSummary };
+    return { reachedSource: response.status === 404 };
+  } catch {
+    return { reachedSource: false };
+  }
+}
+
+async function steamAppMetadata(appID: number): Promise<{ metadata: SteamAppMetadata; cacheable: boolean }> {
+  const syncedAt = new Date().toISOString();
+  const storePromise = (async (): Promise<SourceResult<SteamStoreEnvelope>> => {
     const params = new URLSearchParams({
       appids: String(appID),
       filters: "basic,categories,platforms,genres",
@@ -108,11 +261,18 @@ async function steamAppMetadata(appID: number): Promise<SteamAppMetadata> {
     const response = await cachedFetch(`https://store.steampowered.com/api/appdetails?${params}`);
     if (response.ok) {
       const envelope = await response.json() as Record<string, SteamStoreEnvelope>;
-      store = envelope[String(appID)];
+      return { reachedSource: true, value: envelope[String(appID)] };
     }
-  } catch {
-    // ProtonDB can still provide a compatibility tier when Steam Store is unavailable.
-  }
+    return { reachedSource: false };
+  })().catch((): SourceResult<SteamStoreEnvelope> => ({ reachedSource: false }));
+  const [storeResult, tagResult, protonResult] = await Promise.all([
+    storePromise,
+    steamStoreTags(appID),
+    protonSummary(appID),
+  ]);
+  const store = storeResult.value;
+  const steamTags = tagResult.value ?? [];
+  const proton = protonResult.value;
 
   const categories = store?.success ? store.data?.categories ?? [] : [];
   const controllerValue = store?.data?.controller_support?.toLowerCase();
@@ -122,23 +282,26 @@ async function steamAppMetadata(appID: number): Promise<SteamAppMetadata> {
       ? "partial" as const
       : undefined;
   const nativeLinux = store?.success && store.data?.platforms?.linux === true;
-  const proton = nativeLinux ? undefined : await protonSummary(appID);
   const rawTier = (proton?.tier ?? proton?.bestReportedTier)?.toLowerCase() as LinuxSupport | undefined;
   const linuxSupport: LinuxSupport | undefined = nativeLinux
     ? "native"
     : rawTier && PROTON_TIERS.has(rawTier) ? rawTier : undefined;
 
-  return {
+  const cacheable = storeResult.reachedSource
+    && tagResult.reachedSource
+    && (nativeLinux || protonResult.reachedSource);
+  return { metadata: {
     appId: appID,
     steamGenres: uniqueNames((store?.data?.genres ?? []).map((item) => item.description)),
     steamFeatures: uniqueNames(categories
       .filter((item) => item.id !== undefined && FILTER_CATEGORY_IDS.has(item.id))
       .map((item) => item.description)),
+    steamTags,
     ...(controllerSupport ? { controllerSupport } : {}),
     ...(linuxSupport ? { linuxSupport } : {}),
     ...(proton?.confidence?.trim() ? { protonConfidence: proton.confidence.trim().toLowerCase() } : {}),
-    syncedAt,
-  };
+    syncedAt: cacheable ? syncedAt : "1970-01-01T00:00:00.000Z",
+  }, cacheable };
 }
 
 export function normalizeSteamAppIDs(values: unknown): number[] | undefined {
@@ -151,12 +314,22 @@ export function normalizeSteamAppIDs(values: unknown): number[] | undefined {
   return result.length ? result : undefined;
 }
 
-export async function steamAppsMetadata(appIDs: number[]): Promise<SteamAppMetadata[]> {
-  const results: SteamAppMetadata[] = [];
-  for (let start = 0; start < appIDs.length; start += 5) {
-    results.push(...await Promise.all(appIDs.slice(start, start + 5).map(steamAppMetadata)));
+export async function steamAppsMetadata(
+  appIDs: number[],
+  db?: D1Database,
+): Promise<SteamAppMetadata[]> {
+  const cached = await readSteamMetadata(db, appIDs);
+  const missing = appIDs.filter((appID) => !cached.has(appID));
+  const fetched: Array<{ metadata: SteamAppMetadata; cacheable: boolean }> = [];
+  for (let start = 0; start < missing.length; start += 5) {
+    fetched.push(...await Promise.all(missing.slice(start, start + 5).map(steamAppMetadata)));
   }
-  return results;
+  await writeSteamMetadata(db, fetched.filter((result) => result.cacheable).map((result) => result.metadata));
+  for (const { metadata } of fetched) cached.set(metadata.appId, metadata);
+  return appIDs.flatMap((appID) => {
+    const app = cached.get(appID);
+    return app ? [app] : [];
+  });
 }
 
 function configuredOrigins(env: Env): Set<string> {

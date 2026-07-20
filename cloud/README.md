@@ -36,7 +36,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 The helper installs Wrangler, opens Cloudflare login, creates a D1 database, generates a random 64-character sync token, applies all migrations, and deploys the Worker. It never uploads the token to GitHub.
 
-The optional Steam prompt stores the key as a Worker secret. Steam OpenID handles account sign-in on Steam's page, but Valve still requires this server-side key to read a visibility-permitted owned library. Controller and Proton/Linux metadata do not need the key.
+The optional Steam prompt stores the key as a Worker secret. Steam OpenID handles account sign-in on Steam's page, but Valve still requires this server-side key to read a visibility-permitted owned library. Steam popular tags, features, full/partial controller support, native Linux availability, and ProtonDB compatibility do not need the key; the Worker retrieves and caches that app-level metadata in D1.
 
 At the end, copy the printed `workers.dev` URL and token into **GameVault → Settings → Optional Cloud**, then choose **Save connection** and **Sync**.
 

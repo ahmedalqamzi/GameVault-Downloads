@@ -50,6 +50,7 @@
       <section class="doc-section">
         <h2>Optional: enable Steam library import</h2>
         <p>Steam OpenID lets the user sign in on Steam's page without sharing a password. Valve still requires the Worker to hold a server-side Web API key before it can request a visibility-permitted owned library and playtime. Create one on the <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noreferrer">Steam Web API key page</a>; the setup helper stores it as a Worker secret.</p>
+        <p>Steam popular tags, features, full/partial controller support, native Linux availability, and ProtonDB compatibility work without that key. The Worker retrieves those app-level records and caches them in D1.</p>
       </section>
 
       <section class="doc-section">

@@ -35,8 +35,10 @@ export interface GameRow {
   age_ratings_json: string | null;
   themes_json: string | null;
   game_modes_json: string | null;
+  keywords_json: string | null;
   steam_genres_json: string | null;
   steam_features_json: string | null;
+  steam_tags_json: string | null;
   controller_support: string | null;
   linux_support: string | null;
   proton_confidence: string | null;
@@ -45,6 +47,17 @@ export interface GameRow {
   genres_json: string;
   release_dates_json: string;
   cached_at: string;
+}
+
+export interface SteamAppMetadataRow {
+  app_id: number;
+  steam_genres_json: string;
+  steam_features_json: string;
+  steam_tags_json: string;
+  controller_support: string | null;
+  linux_support: string | null;
+  proton_confidence: string | null;
+  synced_at: string;
 }
 
 export interface PreferencesRow {

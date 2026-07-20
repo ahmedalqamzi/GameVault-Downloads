@@ -136,8 +136,10 @@ export interface Game {
   ageRatings?: AgeRating[];
   themes?: Genre[];
   gameModes?: Genre[];
+  keywords?: Genre[];
   steamGenres?: string[];
   steamFeatures?: string[];
+  steamTags?: string[];
   controllerSupport?: SteamControllerSupport;
   linuxSupport?: LinuxSupport;
   protonConfidence?: string;
@@ -195,6 +197,7 @@ export interface SteamAppMetadata {
   appId: number;
   steamGenres: string[];
   steamFeatures: string[];
+  steamTags: string[];
   controllerSupport?: SteamControllerSupport;
   linuxSupport?: LinuxSupport;
   protonConfidence?: string;
