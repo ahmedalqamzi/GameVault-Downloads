@@ -7,7 +7,7 @@ Use a personal cloud when you want:
 - Backup outside one device
 - Autosync between your phone, web app, and other installations
 
-The installed APK already gets IGDB-powered search, artwork, release dates, scores, trailer links, and controller/Linux compatibility without a personal cloud or token. Adding IGDB credentials to your own Worker is optional; the app falls back to its built-in read-only metadata service if your Worker has none. Steam library and playtime import requires a Steam Web API key on the Worker serving that request.
+The installed APK already gets IGDB-powered search, artwork, release dates, scores, trailer links, Steam tags and controller data, and Proton/Linux compatibility without a personal cloud or token. Adding IGDB credentials to your own Worker is optional; the app falls back to its built-in read-only metadata service if your Worker has none. Steam library and playtime import requires a Steam Web API key on the Worker serving that request.
 
 ## The easiest route
 

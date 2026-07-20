@@ -97,6 +97,7 @@ export interface IGDBGame {
   genres?: IGDBGenre[];
   themes?: IGDBGenre[];
   game_modes?: IGDBGenre[];
+  keywords?: IGDBGenre[];
   age_ratings?: IGDBAgeRating[];
   release_dates?: IGDBReleaseDate[];
   franchises?: IGDBNamedRef[];
@@ -145,6 +146,8 @@ const GAME_FIELDS = [
   "themes.name",
   "game_modes.id",
   "game_modes.name",
+  "keywords.id",
+  "keywords.name",
   "age_ratings.id",
   "age_ratings.organization.id",
   "age_ratings.organization.name",
@@ -279,6 +282,9 @@ export function normalizeIGDBGame(source: IGDBGame): Game {
   const gameModes: Genre[] = (source.game_modes ?? [])
     .filter((mode) => mode.name)
     .map((mode) => ({ id: mode.id, name: mode.name! }));
+  const keywords: Genre[] = (source.keywords ?? [])
+    .filter((keyword) => keyword.name)
+    .map((keyword) => ({ id: keyword.id, name: keyword.name! }));
   const ageRatings: AgeRating[] = (source.age_ratings ?? [])
     .flatMap((rating) => {
       const organization = rating.organization?.name?.trim();
@@ -386,6 +392,7 @@ export function normalizeIGDBGame(source: IGDBGame): Game {
     ageRatings,
     themes,
     gameModes,
+    keywords,
     platforms,
     genres,
     releaseDates,

@@ -48,12 +48,16 @@ export function rowToGame(row: GameRow): Game {
     : parseArray<AgeRating>(row.age_ratings_json);
   const themes = row.themes_json == null ? undefined : parseArray<Genre>(row.themes_json);
   const gameModes = row.game_modes_json == null ? undefined : parseArray<Genre>(row.game_modes_json);
+  const keywords = row.keywords_json == null ? undefined : parseArray<Genre>(row.keywords_json);
   const steamGenres = row.steam_genres_json == null
     ? undefined
     : parseArray<string>(row.steam_genres_json);
   const steamFeatures = row.steam_features_json == null
     ? undefined
     : parseArray<string>(row.steam_features_json);
+  const steamTags = row.steam_tags_json == null
+    ? undefined
+    : parseArray<string>(row.steam_tags_json);
   return {
     id: row.id,
     name: row.name,
@@ -78,8 +82,10 @@ export function rowToGame(row: GameRow): Game {
     ...(ageRatings !== undefined ? { ageRatings } : {}),
     ...(themes !== undefined ? { themes } : {}),
     ...(gameModes !== undefined ? { gameModes } : {}),
+    ...(keywords !== undefined ? { keywords } : {}),
     ...(steamGenres !== undefined ? { steamGenres } : {}),
     ...(steamFeatures !== undefined ? { steamFeatures } : {}),
+    ...(steamTags !== undefined ? { steamTags } : {}),
     ...(row.controller_support === "full" || row.controller_support === "partial"
       ? { controllerSupport: row.controller_support }
       : {}),
@@ -245,10 +251,10 @@ function gameStatement(db: D1Database, game: Game): D1PreparedStatement {
       id, name, slug, summary, cover_url, first_release_date, status, category,
       source_updated_at, source_created_at, is_custom, average_artwork_color,
       critic_score, critic_score_count, hype, publishers_json, remasters_json, franchises_json, store_links_json, videos_json,
-      age_ratings_json, themes_json, game_modes_json, steam_genres_json, steam_features_json,
+      age_ratings_json, themes_json, game_modes_json, keywords_json, steam_genres_json, steam_features_json, steam_tags_json,
       controller_support, linux_support, proton_confidence, steam_metadata_synced_at,
       platforms_json, genres_json, release_dates_json, cached_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       name = excluded.name,
       slug = excluded.slug,
@@ -272,8 +278,10 @@ function gameStatement(db: D1Database, game: Game): D1PreparedStatement {
       age_ratings_json = COALESCE(excluded.age_ratings_json, games.age_ratings_json),
       themes_json = COALESCE(excluded.themes_json, games.themes_json),
       game_modes_json = COALESCE(excluded.game_modes_json, games.game_modes_json),
+      keywords_json = COALESCE(excluded.keywords_json, games.keywords_json),
       steam_genres_json = COALESCE(excluded.steam_genres_json, games.steam_genres_json),
       steam_features_json = COALESCE(excluded.steam_features_json, games.steam_features_json),
+      steam_tags_json = COALESCE(excluded.steam_tags_json, games.steam_tags_json),
       controller_support = COALESCE(excluded.controller_support, games.controller_support),
       linux_support = COALESCE(excluded.linux_support, games.linux_support),
       proton_confidence = COALESCE(excluded.proton_confidence, games.proton_confidence),
@@ -306,8 +314,10 @@ function gameStatement(db: D1Database, game: Game): D1PreparedStatement {
     game.ageRatings === undefined ? null : JSON.stringify(game.ageRatings),
     game.themes === undefined ? null : JSON.stringify(game.themes),
     game.gameModes === undefined ? null : JSON.stringify(game.gameModes),
+    game.keywords === undefined ? null : JSON.stringify(game.keywords),
     game.steamGenres === undefined ? null : JSON.stringify(game.steamGenres),
     game.steamFeatures === undefined ? null : JSON.stringify(game.steamFeatures),
+    game.steamTags === undefined ? null : JSON.stringify(game.steamTags),
     game.controllerSupport ?? null,
     game.linuxSupport ?? null,
     game.protonConfidence ?? null,
@@ -696,8 +706,10 @@ export async function recordGameRefreshes(
       || old?.age_ratings_json !== JSON.stringify(game.ageRatings ?? [])
       || old?.themes_json !== JSON.stringify(game.themes ?? [])
       || old?.game_modes_json !== JSON.stringify(game.gameModes ?? [])
+      || old?.keywords_json !== JSON.stringify(game.keywords ?? [])
       || old?.steam_genres_json !== JSON.stringify(game.steamGenres ?? [])
       || old?.steam_features_json !== JSON.stringify(game.steamFeatures ?? [])
+      || old?.steam_tags_json !== JSON.stringify(game.steamTags ?? [])
       || old?.controller_support !== (game.controllerSupport ?? null)
       || old?.linux_support !== (game.linuxSupport ?? null)
       || old?.proton_confidence !== (game.protonConfidence ?? null);
