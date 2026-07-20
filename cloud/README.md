@@ -10,6 +10,7 @@ You need:
 - A free [Cloudflare account](https://dash.cloudflare.com/sign-up)
 - About 10 minutes
 - Optional: Twitch/IGDB credentials for live search, covers, dates, scores, and trailers
+- Optional: a Steam Web API key for owned-library and playtime import
 
 No personal token or database ID is included in this kit.
 
@@ -35,6 +36,8 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 The helper installs Wrangler, opens Cloudflare login, creates a D1 database, generates a random 64-character sync token, applies all migrations, and deploys the Worker. It never uploads the token to GitHub.
 
+The optional Steam prompt stores the key as a Worker secret. Steam OpenID handles account sign-in on Steam's page, but Valve still requires this server-side key to read a visibility-permitted owned library. Controller and Proton/Linux metadata do not need the key.
+
 At the end, copy the printed `workers.dev` URL and token into **GameVault → Settings → Optional Cloud**, then choose **Save connection** and **Sync**.
 
 ## Add IGDB later
@@ -48,6 +51,15 @@ npx wrangler deploy -c workers/api/wrangler.jsonc
 ```
 
 Wrangler prompts for each value securely. Do not paste credentials into `wrangler.jsonc`.
+
+## Add Steam later
+
+Create a key at the [Steam Community API key page](https://steamcommunity.com/dev/apikey), then run:
+
+```bash
+npx wrangler secret put STEAM_API_KEY -c workers/api/wrangler.jsonc
+npx wrangler deploy -c workers/api/wrangler.jsonc
+```
 
 ## Important security boundary
 

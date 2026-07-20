@@ -36,6 +36,12 @@ if ($addIgdb -match '^[Yy]$') {
   npx wrangler secret put IGDB_CLIENT_SECRET -c workers/api/wrangler.jsonc
 }
 
+$addSteam = Read-Host "Add Steam library import now? [y/N]"
+if ($addSteam -match '^[Yy]$') {
+  Write-Host "Wrangler will securely prompt for your Steam Web API key."
+  npx wrangler secret put STEAM_API_KEY -c workers/api/wrangler.jsonc
+}
+
 Write-Host "Creating the GameVault tables..."
 npx wrangler d1 migrations apply DB --remote -c workers/api/wrangler.jsonc
 

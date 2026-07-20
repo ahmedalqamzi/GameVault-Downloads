@@ -1,4 +1,4 @@
-# GameVault downloads
+# GameVault 0.4.0 downloads
 
 Public downloads, screenshots, and install instructions for GameVault.
 
@@ -10,15 +10,17 @@ Public downloads, screenshots, and install instructions for GameVault.
 
 | Platform | File | SHA-256 |
 | --- | --- | --- |
-| Android 8+ | [GameVault-Android.apk](downloads/GameVault-Android.apk) | `1f3760256defbd1f6fdf796f685407b78295a44dc7d533c84da1fb992be42d1e` |
-| iOS 17+ | [GameVault-iOS-unsigned.ipa](downloads/GameVault-iOS-unsigned.ipa) | `c70d8f28b0dcb3aa5fb4b6a6e74a5b7d8e74f50bc0124ec4c46f48f2922a0894` |
-| Optional cloud | [GameVault-Cloud-Setup.zip](downloads/GameVault-Cloud-Setup.zip) | `0086f09fdfcfe56acab768aa64aec6fe4fb271206e779157b84c32c7b5cca7b9` |
+| Android 8+ | [GameVault-Android.apk](downloads/GameVault-Android.apk) | `9a2296f88d8315089fb901a0f964f454f0adf8fd96b773bc63770b96cdacff12` |
+| iOS 17+ | [GameVault-iOS-unsigned.ipa](downloads/GameVault-iOS-unsigned.ipa) | `1ed85235ff5849e2cf69c17a7da1a586759bf0aacc78e54c2efb15d133ebb054` |
+| Optional cloud | [GameVault-Cloud-Setup.zip](downloads/GameVault-Cloud-Setup.zip) | `17e6a161b3129420dc90f838a6e3bef6a2774d4b05837414abb3eb1e3364af76` |
 
 The Android APK is a signed direct-install build. The iPhone IPA is unsigned and must be installed with SideStore, AltStore, or another sideloading tool. Free Apple signing normally needs refreshing every seven days.
 
 ## Use it without a server
 
-GameVault starts in phone-only mode. Install once and live search, covers, dates, scores, franchises, stores, trailers, and public-profile Steam import work automatically while online—no PC, account, personal server, or token setup. Personal library and Steam playtime stay on that device unless cloud sync is configured.
+GameVault starts in phone-only mode. Version 0.4.0 adds a tile-based Collection home for Playing, Backlog, Wishlist, Completed, Dropped, custom folders, and Franchises. One Filter menu now contains genres and play styles such as Action, Horror, Co-op, and Multiplayer, plus age rating, controller support, and Linux/Proton compatibility.
+
+Steam sign-in opens Steam's own page, returns only the Steam ID, and never gives GameVault the password. Owned-library and playtime import requires a Steam Web API key on the metadata service and a Steam profile whose Game Details are visible. The optional cloud setup kit can configure that key securely.
 
 Signed APK updates retain the existing Android library when installed over the old version. Settings can also export and restore a complete local JSON backup without including the private sync token.
 

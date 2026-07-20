@@ -16,6 +16,22 @@ export interface Genre {
   name: string;
 }
 
+export interface AgeRating {
+  organization: string;
+  rating: string;
+}
+
+export type SteamControllerSupport = "full" | "partial";
+
+export type LinuxSupport =
+  | "native"
+  | "platinum"
+  | "gold"
+  | "silver"
+  | "bronze"
+  | "borked"
+  | "pending";
+
 export interface ReleaseDate {
   id: number;
   date?: number;
@@ -56,7 +72,15 @@ export interface UserPreferences {
   preferredPlatforms: string[];
   preferredStores: string[];
   followedFranchises: FranchiseRef[];
+  customFolders: CollectionFolder[];
+  steamId?: string;
   updatedAt: string;
+}
+
+export interface CollectionFolder {
+  id: string;
+  name: string;
+  createdAt: string;
 }
 
 export interface PreferencesResponse {
@@ -109,6 +133,15 @@ export interface Game {
   franchises?: FranchiseRef[];
   storeLinks?: StoreLink[];
   videos?: GameVideo[];
+  ageRatings?: AgeRating[];
+  themes?: Genre[];
+  gameModes?: Genre[];
+  steamGenres?: string[];
+  steamFeatures?: string[];
+  controllerSupport?: SteamControllerSupport;
+  linuxSupport?: LinuxSupport;
+  protonConfidence?: string;
+  steamMetadataSyncedAt?: string;
   platforms: Platform[];
   genres: Genre[];
   releaseDates: ReleaseDate[];
@@ -129,11 +162,47 @@ export interface LibraryEntry {
   playthroughs?: Playthrough[];
   playSessions?: PlaySession[];
   friends?: FriendActivity[];
+  customFolderIds?: string[];
+  steamAppId?: number;
+  steamPlaytimeMinutes?: number;
+  steamPlaytimeTwoWeeksMinutes?: number;
+  steamLastPlayedAt?: string;
+  steamSyncedAt?: string;
   isUpNext?: boolean;
   manualOrder?: number;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+}
+
+export interface SteamLibraryGame {
+  game: Game;
+  appId: number;
+  playtimeMinutes: number;
+  playtimeTwoWeeksMinutes?: number;
+  lastPlayedAt?: string;
+}
+
+export interface SteamSyncResponse {
+  steamId: string;
+  games: SteamLibraryGame[];
+  matched: number;
+  unmatched: number;
+  syncedAt: string;
+}
+
+export interface SteamAppMetadata {
+  appId: number;
+  steamGenres: string[];
+  steamFeatures: string[];
+  controllerSupport?: SteamControllerSupport;
+  linuxSupport?: LinuxSupport;
+  protonConfidence?: string;
+  syncedAt: string;
+}
+
+export interface SteamAppsResponse {
+  apps: SteamAppMetadata[];
 }
 
 export interface LibraryItem {
