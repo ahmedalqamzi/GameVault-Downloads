@@ -1,5 +1,5 @@
-# Copy this file to .dev.vars only for local development.
-# Never commit the real values.
-SYNC_TOKEN=replace-with-a-long-random-token
-IGDB_CLIENT_ID=
-IGDB_CLIENT_SECRET=
+# Copy this file to .dev.vars for local development.
+SYNC_TOKEN="replace-with-a-long-random-token"
+IGDB_CLIENT_ID="your-twitch-client-id"
+IGDB_CLIENT_SECRET="your-twitch-client-secret"
+STEAM_API_KEY="your-steam-web-api-key"

@@ -1,4 +1,5 @@
 import type {
+  AgeRating,
   FranchiseRef,
   Game,
   GameRelation,
@@ -70,6 +71,12 @@ interface IGDBGameStatus {
   status?: string;
 }
 
+interface IGDBAgeRating {
+  id: number;
+  organization?: IGDBNamedRef;
+  rating_category?: { id: number; rating?: string };
+}
+
 export interface IGDBGame {
   id: number;
   name?: string;
@@ -88,6 +95,9 @@ export interface IGDBGame {
   cover?: { image_id?: string };
   platforms?: IGDBPlatform[];
   genres?: IGDBGenre[];
+  themes?: IGDBGenre[];
+  game_modes?: IGDBGenre[];
+  age_ratings?: IGDBAgeRating[];
   release_dates?: IGDBReleaseDate[];
   franchises?: IGDBNamedRef[];
   collections?: IGDBNamedRef[];
@@ -101,6 +111,11 @@ export interface IGDBGame {
 interface TokenResponse {
   access_token: string;
   expires_in: number;
+}
+
+interface IGDBExternalGameMapping {
+  uid?: string;
+  game?: number;
 }
 
 const GAME_FIELDS = [
@@ -126,6 +141,15 @@ const GAME_FIELDS = [
   "platforms.abbreviation",
   "genres.id",
   "genres.name",
+  "themes.id",
+  "themes.name",
+  "game_modes.id",
+  "game_modes.name",
+  "age_ratings.id",
+  "age_ratings.organization.id",
+  "age_ratings.organization.name",
+  "age_ratings.rating_category.id",
+  "age_ratings.rating_category.rating",
   "release_dates.id",
   "release_dates.date",
   "release_dates.human",
@@ -161,6 +185,11 @@ const GAME_FIELDS = [
 ].join(",");
 
 let tokenCache: { token: string; expiresAt: number } | undefined;
+const IGDB_BATCH_PAUSE_MS = 275;
+
+function pauseBetweenIGDBBatches(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, IGDB_BATCH_PAUSE_MS));
+}
 
 function requireCredentials(env: Env): { clientId: string; clientSecret: string } {
   if (!env.IGDB_CLIENT_ID || !env.IGDB_CLIENT_SECRET) {
@@ -190,10 +219,10 @@ async function accessToken(env: Env): Promise<string> {
   return payload.access_token;
 }
 
-async function queryIGDB(env: Env, body: string): Promise<IGDBGame[]> {
+async function queryIGDBEndpoint<T>(env: Env, endpoint: string, body: string): Promise<T[]> {
   const { clientId } = requireCredentials(env);
   const token = await accessToken(env);
-  const response = await fetch("https://api.igdb.com/v4/games", {
+  const response = await fetch(`https://api.igdb.com/v4/${endpoint}`, {
     method: "POST",
     headers: {
       accept: "application/json",
@@ -207,7 +236,11 @@ async function queryIGDB(env: Env, body: string): Promise<IGDBGame[]> {
     const detail = await response.text();
     throw new Error(`IGDB query failed (${response.status}): ${detail.slice(0, 160)}`);
   }
-  return (await response.json()) as IGDBGame[];
+  return (await response.json()) as T[];
+}
+
+async function queryIGDB(env: Env, body: string): Promise<IGDBGame[]> {
+  return queryIGDBEndpoint<IGDBGame>(env, "games", body);
 }
 
 export function escapeIGDBSearch(value: string): string {
@@ -240,6 +273,21 @@ export function normalizeIGDBGame(source: IGDBGame): Game {
   const genres: Genre[] = (source.genres ?? [])
     .filter((genre) => genre.name)
     .map((genre) => ({ id: genre.id, name: genre.name! }));
+  const themes: Genre[] = (source.themes ?? [])
+    .filter((theme) => theme.name)
+    .map((theme) => ({ id: theme.id, name: theme.name! }));
+  const gameModes: Genre[] = (source.game_modes ?? [])
+    .filter((mode) => mode.name)
+    .map((mode) => ({ id: mode.id, name: mode.name! }));
+  const ageRatings: AgeRating[] = (source.age_ratings ?? [])
+    .flatMap((rating) => {
+      const organization = rating.organization?.name?.trim();
+      const value = rating.rating_category?.rating?.trim();
+      return organization && value ? [{ organization, rating: value }] : [];
+    })
+    .filter((rating, index, ratings) => ratings.findIndex((other) => (
+      other.organization === rating.organization && other.rating === rating.rating
+    )) === index);
   const releaseDates: ReleaseDate[] = (source.release_dates ?? []).map((release) => ({
     id: release.id,
     ...(release.date ? { date: release.date } : {}),
@@ -335,6 +383,9 @@ export function normalizeIGDBGame(source: IGDBGame): Game {
     ...(franchises.length ? { franchises } : {}),
     ...(storeLinks.length ? { storeLinks } : {}),
     ...(videos.length ? { videos } : {}),
+    ageRatings,
+    themes,
+    gameModes,
     platforms,
     genres,
     releaseDates,
@@ -386,6 +437,42 @@ export async function gamesByIds(env: Env, ids: number[]): Promise<Game[]> {
     `fields ${GAME_FIELDS}; where id = (${cleanIds.join(",")}); limit ${cleanIds.length};`,
   );
   return rows.map(normalizeIGDBGame);
+}
+
+export async function gamesBySteamAppIds(env: Env, appIds: number[]): Promise<Map<number, Game>> {
+  const cleanIds = [...new Set(appIds)]
+    .filter((id) => Number.isInteger(id) && id > 0 && id <= 4_294_967_295);
+  if (cleanIds.length === 0) return new Map();
+
+  const gameIDByAppID = new Map<number, number>();
+  for (let start = 0; start < cleanIds.length; start += 400) {
+    const chunk = cleanIds.slice(start, start + 400);
+    const quoted = chunk.map((id) => `"${id}"`).join(",");
+    const rows = await queryIGDBEndpoint<IGDBExternalGameMapping>(
+      env,
+      "external_games",
+      `fields game,uid; where external_game_source = 1 & uid = (${quoted}); limit ${chunk.length};`,
+    );
+    for (const row of rows) {
+      const appID = Number(row.uid);
+      if (Number.isInteger(appID) && appID > 0 && Number.isInteger(row.game) && row.game! > 0) {
+        gameIDByAppID.set(appID, row.game!);
+      }
+    }
+    await pauseBetweenIGDBBatches();
+  }
+
+  const games: Game[] = [];
+  const gameIDs = [...new Set(gameIDByAppID.values())];
+  for (let start = 0; start < gameIDs.length; start += 500) {
+    games.push(...await gamesByIds(env, gameIDs.slice(start, start + 500)));
+    if (start + 500 < gameIDs.length) await pauseBetweenIGDBBatches();
+  }
+  const gamesByID = new Map(games.map((game) => [game.id, game]));
+  return new Map([...gameIDByAppID].flatMap(([appID, gameID]) => {
+    const game = gamesByID.get(gameID);
+    return game ? [[appID, game] as const] : [];
+  }));
 }
 
 export async function gamesInFranchise(

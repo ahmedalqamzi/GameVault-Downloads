@@ -18,7 +18,7 @@
 
       <section class="doc-section">
         <h2>What you need</h2>
-        <ul><li>A Windows, macOS, or Linux computer</li><li>Node.js 22 or newer</li><li>A free Cloudflare account</li><li>About 10 minutes</li><li>Optional Twitch/IGDB credentials only if you want your own metadata proxy</li></ul>
+        <ul><li>A Windows, macOS, or Linux computer</li><li>Node.js 22 or newer</li><li>A free Cloudflare account</li><li>About 10 minutes</li><li>Optional Twitch/IGDB credentials only if you want your own metadata proxy</li><li>Optional Steam Web API key if you want owned-library and playtime import</li></ul>
         <div class="doc-card"><strong>Your app does not wait for this.</strong><p>Install GameVault and use phone-only mode immediately. You can connect cloud later without reinstalling.</p></div>
       </section>
 
@@ -38,13 +38,18 @@
 
       <section class="doc-section">
         <h2>What the helper does</h2>
-        <p>It installs Cloudflare Wrangler, creates your D1 database, generates a random 64-character token, stores that token as a Worker secret, applies the complete GameVault schema, and deploys the API. It can also prompt securely for optional IGDB credentials.</p>
+        <p>It installs Cloudflare Wrangler, creates your D1 database, generates a random 64-character token, stores that token as a Worker secret, applies the complete GameVault schema, and deploys the API. It can also prompt securely for optional IGDB credentials and a Steam Web API key.</p>
         <p>The kit contains placeholders only. It does not contain another person's account, token, database ID, private game library, or metadata credentials.</p>
       </section>
 
       <section class="doc-section">
         <h2>Optional: use your own metadata proxy</h2>
         <p>The installed app already receives live search, refreshed artwork, dates, scores, and trailers without a personal cloud. To proxy IGDB through your own Worker instead, create Twitch application credentials using the <a href="https://api-docs.igdb.com/#account-creation" target="_blank" rel="noreferrer">official IGDB authentication guide</a>. The setup helper stores them as Worker secrets. Without them, the app falls back to its built-in read-only metadata service.</p>
+      </section>
+
+      <section class="doc-section">
+        <h2>Optional: enable Steam library import</h2>
+        <p>Steam OpenID lets the user sign in on Steam's page without sharing a password. Valve still requires the Worker to hold a server-side Web API key before it can request a visibility-permitted owned library and playtime. Create one on the <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noreferrer">Steam Web API key page</a>; the setup helper stores it as a Worker secret.</p>
       </section>
 
       <section class="doc-section">

@@ -1,9 +1,11 @@
 import type {
   ClientChange,
+  CollectionFolder,
   LibraryResponse,
   PreferencesResponse,
   PushResponse,
   SearchResponse,
+  SteamAppsResponse,
   UserPreferences,
 } from "@gamevault/shared";
 import {
@@ -27,6 +29,15 @@ import {
   gamesInFranchise,
   searchGames,
 } from "./igdb";
+import {
+  isValidSteamIdentity,
+  normalizeSteamAppIDs,
+  normalizeSteamID,
+  steamAppsMetadata,
+  steamLibrary,
+  steamOpenIDCallback,
+  steamOpenIDStart,
+} from "./steam";
 import type { Env } from "./types";
 
 interface PushRequest {
@@ -37,6 +48,16 @@ interface PreferencesRequest {
   preferredPlatforms?: unknown;
   preferredStores?: unknown;
   followedFranchises?: unknown;
+  customFolders?: unknown;
+  steamId?: unknown;
+}
+
+interface SteamRequest {
+  steamId?: unknown;
+}
+
+interface SteamAppsRequest {
+  appIds?: unknown;
 }
 
 function isValidPreferenceList(value: unknown): value is string[] {
@@ -63,6 +84,23 @@ export function isValidFranchisePreferenceList(value: unknown): value is UserPre
         || (typeof (item as { averageArtworkColor?: unknown }).averageArtworkColor === "string" && (item as { averageArtworkColor: string }).averageArtworkColor.length <= 100))
       && ((item as { publisher?: unknown }).publisher === undefined
         || (typeof (item as { publisher?: unknown }).publisher === "string" && (item as { publisher: string }).publisher.trim().length <= 200))
+    ));
+}
+
+export function isValidCustomFolderList(value: unknown): value is CollectionFolder[] {
+  return Array.isArray(value)
+    && value.length <= 100
+    && value.every((item) => (
+      item !== null
+      && typeof item === "object"
+      && typeof (item as { id?: unknown }).id === "string"
+      && (item as { id: string }).id.trim().length >= 8
+      && (item as { id: string }).id.trim().length <= 100
+      && typeof (item as { name?: unknown }).name === "string"
+      && (item as { name: string }).name.trim().length > 0
+      && (item as { name: string }).name.trim().length <= 80
+      && typeof (item as { createdAt?: unknown }).createdAt === "string"
+      && !Number.isNaN(Date.parse((item as { createdAt: string }).createdAt))
     ));
 }
 
@@ -99,6 +137,10 @@ function metadataClientKey(request: Request): string {
     : "unknown-installation";
   const address = request.headers.get("cf-connecting-ip")?.trim() || "unknown-address";
   return `${address}:${validInstallation}`;
+}
+
+function steamClientKey(request: Request): string {
+  return request.headers.get("cf-connecting-ip")?.trim() || "unknown-address";
 }
 
 async function routePublicMetadata(
@@ -184,6 +226,86 @@ async function routePublicMetadata(
   });
 }
 
+async function routePublicSteam(
+  request: Request,
+  env: Env,
+  path: string,
+  url: URL,
+): Promise<Response | undefined> {
+  if (path === "/v1/steam/auth/start" && request.method === "GET") {
+    const returnTarget = url.searchParams.get("return_to") ?? "";
+    try {
+      return steamOpenIDStart(request, env, returnTarget);
+    } catch (error) {
+      return apiError(request, env, 422, "invalid_return_target", error instanceof Error ? error.message : "The return address is invalid.");
+    }
+  }
+
+  if (path === "/v1/steam/auth/callback" && request.method === "GET") {
+    try {
+      return await steamOpenIDCallback(request, env);
+    } catch (error) {
+      return apiError(request, env, 401, "steam_auth_failed", error instanceof Error ? error.message : "Steam sign-in failed.");
+    }
+  }
+
+  if (path === "/v1/steam/apps" && request.method === "POST") {
+    const contentLength = Number.parseInt(request.headers.get("content-length") ?? "0", 10);
+    if (Number.isFinite(contentLength) && contentLength > 2_048) {
+      return apiError(request, env, 413, "request_too_large", "The Steam metadata request is too large.");
+    }
+    const body = await parseJson<SteamAppsRequest>(request);
+    const appIDs = normalizeSteamAppIDs(body?.appIds);
+    if (!appIDs) {
+      return apiError(request, env, 422, "invalid_app_ids", "Provide 1–20 valid Steam app IDs.");
+    }
+    if (env.STEAM_METADATA_RATE_LIMITER) {
+      const outcome = await env.STEAM_METADATA_RATE_LIMITER.limit({ key: steamClientKey(request) });
+      if (!outcome.success) {
+        return apiError(request, env, 429, "rate_limited", "Too many Steam metadata requests. Try again in a minute.");
+      }
+    }
+    const apps = await steamAppsMetadata(appIDs);
+    return json(request, env, { apps } satisfies SteamAppsResponse, {
+      headers: { "cache-control": "no-store" },
+    });
+  }
+
+  if (path !== "/v1/steam/sync" || request.method !== "POST") return undefined;
+
+  const contentLength = Number.parseInt(request.headers.get("content-length") ?? "0", 10);
+  if (Number.isFinite(contentLength) && contentLength > 2_048) {
+    return apiError(request, env, 413, "request_too_large", "The Steam profile request is too large.");
+  }
+  const body = await parseJson<SteamRequest>(request);
+  if (!body || typeof body.steamId !== "string" || !isValidSteamIdentity(body.steamId)) {
+    return apiError(request, env, 422, "invalid_steam_id", "Enter a valid 17-digit Steam ID or public profile URL.");
+  }
+  if (!env.STEAM_API_KEY) {
+    return apiError(request, env, 503, "steam_not_configured", "Steam integration is not configured on the GameVault service.");
+  }
+  if (env.STEAM_RATE_LIMITER) {
+    const outcome = await env.STEAM_RATE_LIMITER.limit({ key: steamClientKey(request) });
+    if (!outcome.success) {
+      return apiError(request, env, 429, "rate_limited", "Too many Steam imports. Try again in a minute.");
+    }
+  }
+
+  try {
+    const result = await steamLibrary(env, body.steamId);
+    await cacheGames(env.DB, result.games.map((item) => item.game));
+    return json(request, env, result, { headers: { "cache-control": "no-store" } });
+  } catch (error) {
+    return apiError(
+      request,
+      env,
+      502,
+      "steam_sync_failed",
+      error instanceof Error ? error.message : "Steam library sync failed.",
+    );
+  }
+}
+
 function isValidChange(change: ClientChange): boolean {
   if (
     !change
@@ -206,12 +328,18 @@ async function route(request: Request, env: Env): Promise<Response> {
       ok: true,
       service: "gamevault-api",
       igdbConfigured: Boolean(env.IGDB_CLIENT_ID && env.IGDB_CLIENT_SECRET),
+      steamConfigured: Boolean(env.STEAM_API_KEY),
       time: new Date().toISOString(),
     });
   }
 
   const metadataResponse = await routePublicMetadata(request, env, path, url);
   if (metadataResponse) return metadataResponse;
+
+  // Steam imports use only public profile data and return it directly to the
+  // requesting device. This keeps phone-only mode independent of cloud sync.
+  const steamResponse = await routePublicSteam(request, env, path, url);
+  if (steamResponse) return steamResponse;
 
   if (!env.SYNC_TOKEN) {
     return apiError(request, env, 503, "not_configured", "The sync token is not configured.");
@@ -240,6 +368,9 @@ async function route(request: Request, env: Env): Promise<Response> {
       || !isValidPreferenceList(body.preferredPlatforms)
       || !isValidPreferenceList(body.preferredStores)
       || (body.followedFranchises !== undefined && !isValidFranchisePreferenceList(body.followedFranchises))
+      || (body.customFolders !== undefined && !isValidCustomFolderList(body.customFolders))
+      || (body.steamId !== undefined
+        && (typeof body.steamId !== "string" || (body.steamId.trim() && !normalizeSteamID(body.steamId))))
     ) {
       return apiError(request, env, 422, "invalid_preferences", "Platform and store preferences must be ordered names, and followed franchises must be valid references.");
     }
@@ -247,6 +378,10 @@ async function route(request: Request, env: Env): Promise<Response> {
       preferredPlatforms: body.preferredPlatforms,
       preferredStores: body.preferredStores,
       ...(body.followedFranchises !== undefined ? { followedFranchises: body.followedFranchises } : {}),
+      ...(body.customFolders !== undefined ? { customFolders: body.customFolders } : {}),
+      ...(body.steamId !== undefined
+        ? { steamId: body.steamId.trim() ? normalizeSteamID(body.steamId)! : "" }
+        : {}),
     });
     return json(request, env, { preferences } satisfies PreferencesResponse, {
       headers: { "cache-control": "no-store" },
