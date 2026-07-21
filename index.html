@@ -64,7 +64,7 @@
             <p class="eyebrow"><span></span> Local first. Cloud when you want it.</p>
             <h1>Your whole game life, <em>finally in view.</em></h1>
             <p class="hero-lede">
-              Keep releases, collection folders, Steam playtime, franchise timelines, trailers, and play history together. Version 0.5.0 adds searchable tick-box filters backed by IGDB, Steam, and ProtonDB data.
+              Keep releases, collection folders, Steam progress, franchise timelines, trailers, and play history together. Version 0.6.0 adds Steam library import, platform playtime, and achievement tracking alongside the full tick-box filter system.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="downloads/GameVault-Android.apk" download data-smart-download>
@@ -180,6 +180,16 @@
             <article class="feature-card reveal">
               <span class="feature-number">05</span>
               <div class="feature-icon">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 15a7 7 0 1 1 4 4" /><circle cx="15" cy="9" r="2.5" /><path d="m13 11-4 3m0 0 3 3M9 14a2.5 2.5 0 1 1-2.5 2.5" /></svg>
+              </div>
+              <h3>Steam library and achievements</h3>
+              <p>Sign in on Steam's page to import owned games, track recent and lifetime playtime by platform, and see achievement completion, unlock dates, descriptions, and global rarity.</p>
+              <div class="status-pills" aria-hidden="true"><span class="green">42 / 51</span><span class="blue">82.4%</span><span class="purple">Steam Deck</span></div>
+            </article>
+
+            <article class="feature-card reveal" data-delay="1">
+              <span class="feature-number">06</span>
+              <div class="feature-icon">
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14" /><circle cx="9" cy="6" r="2" /><circle cx="15" cy="12" r="2" /><circle cx="11" cy="18" r="2" /></svg>
               </div>
               <h3>Searchable tick-box filters</h3>
@@ -187,8 +197,8 @@
               <div class="status-pills" aria-hidden="true"><span class="green">Co-op</span><span class="blue">Action</span><span class="purple">Horror</span><span class="gold">Proton</span></div>
             </article>
 
-            <article class="feature-card reveal" data-delay="1">
-              <span class="feature-number">06</span>
+            <article class="feature-card reveal" data-delay="2">
+              <span class="feature-number">07</span>
               <div class="feature-icon">
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 17v3h16v-3M12 4v12m0 0 4-4m-4 4-4-4" /></svg>
               </div>
@@ -285,16 +295,16 @@
                 <ol class="steps">
                   <li><span>1</span><div><strong>Download the APK</strong><p>Tap the button and open the file from your browser's downloads.</p></div></li>
                   <li><span>2</span><div><strong>Allow this install</strong><p>If Android asks, allow “Install unknown apps” for the browser or Files app you used.</p></div></li>
-                  <li><span>3</span><div><strong>Open GameVault</strong><p>Search, filters, collection tiles, and compatibility metadata work in phone-only mode. Steam import activates when its service key is configured.</p></div></li>
+                  <li><span>3</span><div><strong>Open GameVault</strong><p>Your existing library stays in place. Search, filters, collection tiles, and compatibility metadata work in phone-only mode; Connect with Steam adds library activity when enabled.</p></div></li>
                 </ol>
               </div>
               <div class="download-card">
                 <div class="download-icon android-icon">A</div>
                 <p class="eyebrow">ANDROID 8+</p>
                 <h3>GameVault APK</h3>
-                <p>Version 0.5.0 · signed release build · 1.3 MB</p>
+                <p>Version 0.6.0 · signed release build · 1.3 MB</p>
                 <a class="button button-primary button-full" href="downloads/GameVault-Android.apk" download>Download APK</a>
-                <div class="checksum"><span>SHA-256</span><code>aaa0d8ede7a50b9…</code><button type="button" data-copy="aaa0d8ede7a50b9a5917486763549431012a3c561e72bfcd15f6de244a7a144c" aria-label="Copy Android checksum">Copy</button></div>
+                <div class="checksum"><span>SHA-256</span><code>9e68989d552f5947…</code><button type="button" data-copy="9e68989d552f59476634bb9ad2b4010b328b9f7073c4d958bc58b93dc685fc79" aria-label="Copy Android checksum">Copy</button></div>
                 <p class="card-note">Install future versions over this copy to keep your saved library. Settings also includes a full JSON backup and restore.</p>
               </div>
             </div>
@@ -314,9 +324,9 @@
                 <div class="download-icon ios-icon"></div>
                 <p class="eyebrow">IPHONE · IOS 17+</p>
                 <h3>GameVault IPA</h3>
-                <p>Version 0.5.0 · unsigned native build · 1.1 MB</p>
+                <p>Version 0.6.0 · unsigned native build · 1.2 MB</p>
                 <a class="button button-primary button-full" href="downloads/GameVault-iOS-unsigned.ipa" download>Download IPA</a>
-                <div class="checksum"><span>SHA-256</span><code>e24b37f4c664795b…</code><button type="button" data-copy="e24b37f4c664795be536d4d3674052cd91bd5dab421a29621d76153e1bbd126c" aria-label="Copy iPhone checksum">Copy</button></div>
+                <div class="checksum"><span>SHA-256</span><code>b89e0564ac58be19…</code><button type="button" data-copy="b89e0564ac58be194979b0a96ff56c0227c4822f94e3f4a32ce38d973bb5d75c" aria-label="Copy iPhone checksum">Copy</button></div>
                 <p class="card-note">This IPA is not App Store-signed. GameVault never receives your Apple Account password.</p>
               </div>
             </div>
@@ -388,7 +398,7 @@
           <div class="faq-list reveal" data-delay="1">
             <details open>
               <summary>Does it work without any online service?<span></span></summary>
-              <p>Yes. Android, iPhone, and the installed web app keep an on-device library without an account, token, PC, or personal server. Search and metadata need internet. Private cloud backup is optional; Steam library import additionally needs its server-side Steam API key.</p>
+              <p>Yes. Android, iPhone, and the installed web app keep an on-device library without an account, token, PC, or personal server. Search and metadata need internet. Private cloud backup is optional. GameVault's service needs one server-side Steam key for library tracking, but individual phone users only sign in with Steam.</p>
             </details>
             <details>
               <summary>Can I import my previous spreadsheet?<span></span></summary>
@@ -396,7 +406,7 @@
             </details>
             <details>
               <summary>How does Steam sign-in work?<span></span></summary>
-              <p>GameVault opens Steam's own sign-in page through OpenID and receives only your Steam ID—never your password. When the service has its required Steam Web API key, it can import the owned games and playtime allowed by your Steam Game Details privacy setting. If no key is configured, GameVault hides that connection flow instead of offering a setup that cannot finish. Steam tags, controller support, and ProtonDB compatibility still work from a saved game's Steam store link.</p>
+              <p>Tap Connect with Steam and sign in on Steam's own page. GameVault receives only your Steam ID—never your password or browser session. Its one server-side key then imports the owned games, platform playtime, last-played activity, and achievements allowed by your Steam Game Details privacy setting. Steam tags, controller support, and ProtonDB compatibility also load from each saved Steam listing.</p>
             </details>
             <details>
               <summary>Will an APK update erase my library?<span></span></summary>

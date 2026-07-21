@@ -6,6 +6,7 @@ import type {
   PushResponse,
   SearchResponse,
   SteamAppsResponse,
+  SteamAchievementsResponse,
   UserPreferences,
 } from "@gamevault/shared";
 import {
@@ -34,6 +35,7 @@ import {
   normalizeSteamAppIDs,
   normalizeSteamID,
   steamAppsMetadata,
+  steamAchievements,
   steamLibrary,
   steamOpenIDCallback,
   steamOpenIDStart,
@@ -58,6 +60,10 @@ interface SteamRequest {
 
 interface SteamAppsRequest {
   appIds?: unknown;
+}
+
+interface SteamAchievementsRequest extends SteamAppsRequest {
+  steamId?: unknown;
 }
 
 function isValidPreferenceList(value: unknown): value is string[] {
@@ -269,6 +275,44 @@ async function routePublicSteam(
     return json(request, env, { apps } satisfies SteamAppsResponse, {
       headers: { "cache-control": "no-store" },
     });
+  }
+
+  if (path === "/v1/steam/achievements" && request.method === "POST") {
+    const contentLength = Number.parseInt(request.headers.get("content-length") ?? "0", 10);
+    if (Number.isFinite(contentLength) && contentLength > 2_048) {
+      return apiError(request, env, 413, "request_too_large", "The Steam achievement request is too large.");
+    }
+    const body = await parseJson<SteamAchievementsRequest>(request);
+    const appIDs = normalizeSteamAppIDs(body?.appIds, 10);
+    if (!body || typeof body.steamId !== "string" || !isValidSteamIdentity(body.steamId)) {
+      return apiError(request, env, 422, "invalid_steam_id", "Connect a valid Steam account before syncing achievements.");
+    }
+    if (!appIDs) {
+      return apiError(request, env, 422, "invalid_app_ids", "Provide 1–10 valid Steam app IDs.");
+    }
+    if (!env.STEAM_API_KEY) {
+      return apiError(request, env, 503, "steam_not_configured", "Steam integration is not configured on the GameVault service.");
+    }
+    if (env.STEAM_ACHIEVEMENT_RATE_LIMITER) {
+      const outcome = await env.STEAM_ACHIEVEMENT_RATE_LIMITER.limit({ key: steamClientKey(request) });
+      if (!outcome.success) {
+        return apiError(request, env, 429, "rate_limited", "Too many achievement updates. Try again in a minute.");
+      }
+    }
+    try {
+      const result = await steamAchievements(env, body.steamId, appIDs);
+      return json(request, env, result satisfies SteamAchievementsResponse, {
+        headers: { "cache-control": "no-store" },
+      });
+    } catch (error) {
+      return apiError(
+        request,
+        env,
+        502,
+        "steam_achievements_failed",
+        error instanceof Error ? error.message : "Steam achievement sync failed.",
+      );
+    }
   }
 
   if (path !== "/v1/steam/sync" || request.method !== "POST") return undefined;

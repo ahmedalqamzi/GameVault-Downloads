@@ -103,6 +103,47 @@ export interface PlaySession {
   notes?: string;
 }
 
+export interface SteamActivityDetails {
+  playtimeWindowsMinutes?: number;
+  playtimeMacMinutes?: number;
+  playtimeLinuxMinutes?: number;
+  playtimeDeckMinutes?: number;
+  playtimeDisconnectedMinutes?: number;
+  hasCommunityStats?: boolean;
+  achievementsAvailable?: boolean;
+  achievementsUnlocked?: number;
+  achievementsTotal?: number;
+  achievementPercent?: number;
+  lastAchievementAt?: string;
+  achievementsSyncedAt?: string;
+}
+
+export interface SteamAchievement {
+  apiName: string;
+  name: string;
+  description?: string;
+  achieved: boolean;
+  unlockTime?: string;
+  globalPercent?: number;
+}
+
+export interface SteamAchievementProgress {
+  appId: number;
+  available: boolean;
+  gameName?: string;
+  unlocked: number;
+  total: number;
+  percent: number;
+  achievements: SteamAchievement[];
+  syncedAt: string;
+}
+
+export interface SteamAchievementsResponse {
+  steamId: string;
+  games: SteamAchievementProgress[];
+  syncedAt: string;
+}
+
 export type FriendGameStatus = "owns" | "playing" | "completed" | "wants_to_play";
 
 export interface FriendActivity {
@@ -170,6 +211,7 @@ export interface LibraryEntry {
   steamPlaytimeTwoWeeksMinutes?: number;
   steamLastPlayedAt?: string;
   steamSyncedAt?: string;
+  steamActivity?: SteamActivityDetails;
   isUpNext?: boolean;
   manualOrder?: number;
   createdAt: string;
@@ -183,6 +225,7 @@ export interface SteamLibraryGame {
   playtimeMinutes: number;
   playtimeTwoWeeksMinutes?: number;
   lastPlayedAt?: string;
+  activity?: SteamActivityDetails;
 }
 
 export interface SteamSyncResponse {

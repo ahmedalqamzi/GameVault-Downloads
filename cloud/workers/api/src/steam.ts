@@ -1,7 +1,11 @@
 import type {
   Game,
   LinuxSupport,
+  SteamAchievement,
+  SteamAchievementProgress,
+  SteamAchievementsResponse,
   SteamAppMetadata,
+  SteamActivityDetails,
   SteamLibraryGame,
   SteamSyncResponse,
 } from "@gamevault/shared";
@@ -14,6 +18,12 @@ interface SteamOwnedGame {
   playtime_forever?: number;
   playtime_2weeks?: number;
   rtime_last_played?: number;
+  playtime_windows_forever?: number;
+  playtime_mac_forever?: number;
+  playtime_linux_forever?: number;
+  playtime_deck_forever?: number;
+  playtime_disconnected?: number;
+  has_community_visible_stats?: boolean;
 }
 
 interface SteamOwnedGamesEnvelope {
@@ -47,6 +57,28 @@ interface ProtonSummary {
   confidence?: string;
 }
 
+interface SteamPlayerAchievementsEnvelope {
+  playerstats?: {
+    steamID?: string;
+    gameName?: string;
+    success?: boolean;
+    error?: string;
+    achievements?: Array<{
+      apiname?: string;
+      name?: string;
+      description?: string;
+      achieved?: number | boolean;
+      unlocktime?: number;
+    }>;
+  };
+}
+
+interface SteamGlobalAchievementsEnvelope {
+  achievementpercentages?: {
+    achievements?: Array<{ name?: string; percent?: number }>;
+  };
+}
+
 interface SourceResult<T> {
   reachedSource: boolean;
   value?: T;
@@ -63,6 +95,15 @@ const PROTON_TIERS = new Set<LinuxSupport>([
 ]);
 const FILTER_CATEGORY_IDS = new Set([1, 2, 9, 20, 27, 36, 37, 38, 39, 49]);
 const STEAM_METADATA_DATABASE_TTL_MS = 30 * 86_400_000;
+
+function authorizedSteamFetch(env: Env, url: string): Promise<Response> {
+  return fetch(url, {
+    headers: {
+      accept: "application/json",
+      "x-webapi-key": env.STEAM_API_KEY!,
+    },
+  });
+}
 
 function uniqueNames(values: Array<string | undefined>): string[] {
   return [...new Set(values.flatMap((value) => {
@@ -304,14 +345,126 @@ async function steamAppMetadata(appID: number): Promise<{ metadata: SteamAppMeta
   }, cacheable };
 }
 
-export function normalizeSteamAppIDs(values: unknown): number[] | undefined {
-  if (!Array.isArray(values) || values.length < 1 || values.length > 20) return undefined;
+export function normalizeSteamAppIDs(values: unknown, maximum = 20): number[] | undefined {
+  if (!Array.isArray(values) || values.length < 1 || values.length > maximum) return undefined;
   const result: number[] = [];
   for (const value of values) {
     if (!Number.isInteger(value) || Number(value) <= 0 || Number(value) > 4_294_967_295) return undefined;
     if (!result.includes(Number(value))) result.push(Number(value));
   }
   return result.length ? result : undefined;
+}
+
+function normalizedMinutes(value: number | undefined): number | undefined {
+  return Number.isFinite(value) ? Math.max(0, Math.trunc(value!)) : undefined;
+}
+
+async function steamAchievementProgress(
+  env: Env,
+  steamId: string,
+  appId: number,
+  syncedAt: string,
+): Promise<SteamAchievementProgress> {
+  const query = new URLSearchParams({ steamid: steamId, appid: String(appId), l: "english" });
+  const [playerResponse, globalResponse] = await Promise.all([
+    authorizedSteamFetch(
+      env,
+      `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/?${query.toString()}`,
+    ).catch(() => undefined),
+    cachedFetch(
+      `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid=${appId}`,
+    ).catch(() => undefined),
+  ]);
+  if (!playerResponse) throw new Error("Steam achievement tracking is temporarily unavailable.");
+  if (playerResponse.status === 401 || playerResponse.status === 403) {
+    throw new Error("Steam rejected the GameVault server credential.");
+  }
+  if (!playerResponse.ok) throw new Error(`Steam could not load achievements (${playerResponse.status}).`);
+
+  let payload: SteamPlayerAchievementsEnvelope;
+  try {
+    payload = await playerResponse.json() as SteamPlayerAchievementsEnvelope;
+  } catch {
+    throw new Error("Steam returned an unreadable achievement response.");
+  }
+  const player = payload.playerstats;
+  if (player?.success !== true || !Array.isArray(player.achievements)) {
+    return {
+      appId,
+      available: false,
+      ...(player?.gameName?.trim() ? { gameName: player.gameName.trim() } : {}),
+      unlocked: 0,
+      total: 0,
+      percent: 0,
+      achievements: [],
+      syncedAt,
+    };
+  }
+
+  const globalPercentages = new Map<string, number>();
+  if (globalResponse?.ok) {
+    try {
+      const global = await globalResponse.json() as SteamGlobalAchievementsEnvelope;
+      for (const item of global.achievementpercentages?.achievements ?? []) {
+        const name = item.name?.trim();
+        if (name && Number.isFinite(item.percent)) {
+          globalPercentages.set(name, Math.max(0, Math.min(100, item.percent!)));
+        }
+      }
+    } catch {
+      // Rarity is optional; personal unlock state remains usable without it.
+    }
+  }
+
+  const achievements: SteamAchievement[] = player.achievements.flatMap((item) => {
+    const apiName = item.apiname?.trim();
+    if (!apiName) return [];
+    const achieved = item.achieved === 1 || item.achieved === true;
+    const unlockTime = achieved && Number.isFinite(item.unlocktime) && item.unlocktime! > 0
+      ? new Date(Math.trunc(item.unlocktime!) * 1_000).toISOString()
+      : undefined;
+    const globalPercent = globalPercentages.get(apiName);
+    return [{
+      apiName,
+      name: item.name?.trim() || apiName,
+      ...(item.description?.trim() ? { description: item.description.trim() } : {}),
+      achieved,
+      ...(unlockTime ? { unlockTime } : {}),
+      ...(globalPercent !== undefined ? { globalPercent } : {}),
+    }];
+  }).sort((left, right) => {
+    if (left.achieved !== right.achieved) return left.achieved ? -1 : 1;
+    if (left.unlockTime !== right.unlockTime) return (right.unlockTime ?? "").localeCompare(left.unlockTime ?? "");
+    return left.name.localeCompare(right.name);
+  });
+  const unlocked = achievements.filter((item) => item.achieved).length;
+  const total = achievements.length;
+  return {
+    appId,
+    available: true,
+    ...(player.gameName?.trim() ? { gameName: player.gameName.trim() } : {}),
+    unlocked,
+    total,
+    percent: total ? Math.round((unlocked / total) * 1_000) / 10 : 0,
+    achievements,
+    syncedAt,
+  };
+}
+
+export async function steamAchievements(
+  env: Env,
+  rawSteamID: string,
+  appIDs: number[],
+): Promise<SteamAchievementsResponse> {
+  if (!env.STEAM_API_KEY) throw new Error("Steam integration is not configured on the GameVault server.");
+  const steamId = await resolveSteamID(env, rawSteamID);
+  const syncedAt = new Date().toISOString();
+  const games: SteamAchievementProgress[] = [];
+  for (let start = 0; start < appIDs.length; start += 5) {
+    games.push(...await Promise.all(appIDs.slice(start, start + 5)
+      .map((appID) => steamAchievementProgress(env, steamId, appID, syncedAt))));
+  }
+  return { steamId, games, syncedAt };
 }
 
 export async function steamAppsMetadata(
@@ -451,14 +604,13 @@ async function resolveSteamID(env: Env, value: string): Promise<string> {
   if (!vanity) throw new Error("Enter a valid 17-digit Steam ID or Steam Community profile URL.");
 
   const query = new URLSearchParams({
-    key: env.STEAM_API_KEY!,
     vanityurl: vanity,
     url_type: "1",
     format: "json",
   });
-  const response = await fetch(
+  const response = await authorizedSteamFetch(
+    env,
     `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?${query.toString()}`,
-    { headers: { accept: "application/json" } },
   );
   if (!response.ok) throw new Error(`Steam could not resolve this profile (${response.status}).`);
   const payload = (await response.json()) as SteamVanityEnvelope;
@@ -495,15 +647,14 @@ export async function steamLibrary(env: Env, rawSteamID: string): Promise<SteamS
   const steamId = await resolveSteamID(env, rawSteamID);
 
   const query = new URLSearchParams({
-    key: env.STEAM_API_KEY,
     steamid: steamId,
     include_appinfo: "true",
     include_played_free_games: "true",
     format: "json",
   });
-  const response = await fetch(
+  const response = await authorizedSteamFetch(
+    env,
     `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?${query.toString()}`,
-    { headers: { accept: "application/json" } },
   );
   if (!response.ok) throw new Error(`Steam could not load this library (${response.status}).`);
   const payload = (await response.json()) as SteamOwnedGamesEnvelope;
@@ -526,6 +677,24 @@ export async function steamLibrary(env: Env, rawSteamID: string): Promise<SteamS
           ...(Number.isFinite(game.rtime_last_played) && game.rtime_last_played! > 0
             ? { rtime_last_played: Math.trunc(game.rtime_last_played!) }
             : {}),
+          ...(normalizedMinutes(game.playtime_windows_forever) !== undefined
+            ? { playtime_windows_forever: normalizedMinutes(game.playtime_windows_forever) }
+            : {}),
+          ...(normalizedMinutes(game.playtime_mac_forever) !== undefined
+            ? { playtime_mac_forever: normalizedMinutes(game.playtime_mac_forever) }
+            : {}),
+          ...(normalizedMinutes(game.playtime_linux_forever) !== undefined
+            ? { playtime_linux_forever: normalizedMinutes(game.playtime_linux_forever) }
+            : {}),
+          ...(normalizedMinutes(game.playtime_deck_forever) !== undefined
+            ? { playtime_deck_forever: normalizedMinutes(game.playtime_deck_forever) }
+            : {}),
+          ...(normalizedMinutes(game.playtime_disconnected) !== undefined
+            ? { playtime_disconnected: normalizedMinutes(game.playtime_disconnected) }
+            : {}),
+          ...(typeof game.has_community_visible_stats === "boolean"
+            ? { has_community_visible_stats: game.has_community_visible_stats }
+            : {}),
         }]
       : []
   ));
@@ -540,17 +709,38 @@ export async function steamLibrary(env: Env, rawSteamID: string): Promise<SteamS
   }
   const syncedAt = new Date().toISOString();
   const games: SteamLibraryGame[] = owned
-    .map((source) => ({
-      game: matchedGames.get(source.appid) ?? syntheticSteamGame(source),
-      appId: source.appid,
-      playtimeMinutes: source.playtime_forever,
-      ...(source.playtime_2weeks !== undefined
-        ? { playtimeTwoWeeksMinutes: source.playtime_2weeks }
-        : {}),
-      ...(source.rtime_last_played
-        ? { lastPlayedAt: new Date(source.rtime_last_played * 1_000).toISOString() }
-        : {}),
-    }))
+    .map((source) => {
+      const activity: SteamActivityDetails = {
+        ...(source.playtime_windows_forever !== undefined
+          ? { playtimeWindowsMinutes: source.playtime_windows_forever }
+          : {}),
+        ...(source.playtime_mac_forever !== undefined ? { playtimeMacMinutes: source.playtime_mac_forever } : {}),
+        ...(source.playtime_linux_forever !== undefined
+          ? { playtimeLinuxMinutes: source.playtime_linux_forever }
+          : {}),
+        ...(source.playtime_deck_forever !== undefined
+          ? { playtimeDeckMinutes: source.playtime_deck_forever }
+          : {}),
+        ...(source.playtime_disconnected !== undefined
+          ? { playtimeDisconnectedMinutes: source.playtime_disconnected }
+          : {}),
+        ...(source.has_community_visible_stats !== undefined
+          ? { hasCommunityStats: source.has_community_visible_stats }
+          : {}),
+      };
+      return {
+        game: matchedGames.get(source.appid) ?? syntheticSteamGame(source),
+        appId: source.appid,
+        playtimeMinutes: source.playtime_forever,
+        ...(source.playtime_2weeks !== undefined
+          ? { playtimeTwoWeeksMinutes: source.playtime_2weeks }
+          : {}),
+        ...(source.rtime_last_played
+          ? { lastPlayedAt: new Date(source.rtime_last_played * 1_000).toISOString() }
+          : {}),
+        ...(Object.keys(activity).length ? { activity } : {}),
+      };
+    })
     .sort((left, right) => left.game.name.localeCompare(right.game.name));
   const matched = games.filter((item) => !item.game.isCustom).length;
   return { steamId, games, matched, unmatched: games.length - matched, syncedAt };

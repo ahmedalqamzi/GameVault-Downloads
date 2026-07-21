@@ -10,7 +10,7 @@ You need:
 - A free [Cloudflare account](https://dash.cloudflare.com/sign-up)
 - About 10 minutes
 - Optional: Twitch/IGDB credentials for live search, covers, dates, scores, and trailers
-- Optional: a Steam Web API key for owned-library and playtime import
+- Optional: one Steam Web API key for library, playtime, and achievement import
 
 No personal token or database ID is included in this kit.
 
@@ -36,7 +36,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 The helper installs Wrangler, opens Cloudflare login, creates a D1 database, generates a random 64-character sync token, applies all migrations, and deploys the Worker. It never uploads the token to GitHub.
 
-The optional Steam prompt stores the key as a Worker secret. Steam OpenID handles account sign-in on Steam's page, but Valve still requires this server-side key to read a visibility-permitted owned library. Steam popular tags, features, full/partial controller support, native Linux availability, and ProtonDB compatibility do not need the key; the Worker retrieves and caches that app-level metadata in D1.
+The optional Steam prompt stores one operator key as a Worker secret. Phone users only choose **Connect with Steam** and sign in on Steam's page; they never enter an API key into GameVault. Valve requires the server-side key to read a visibility-permitted owned library, platform playtime, and achievements. Steam popular tags, features, full/partial controller support, native Linux availability, and ProtonDB compatibility do not need the key; the Worker retrieves and caches that app-level metadata in D1.
 
 At the end, copy the printed `workers.dev` URL and token into **GameVault → Settings → Optional Cloud**, then choose **Save connection** and **Sync**.
 

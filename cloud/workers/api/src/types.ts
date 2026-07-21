@@ -3,6 +3,7 @@ export interface Env {
   METADATA_RATE_LIMITER?: RateLimit;
   STEAM_RATE_LIMITER?: RateLimit;
   STEAM_METADATA_RATE_LIMITER?: RateLimit;
+  STEAM_ACHIEVEMENT_RATE_LIMITER?: RateLimit;
   SYNC_TOKEN?: string;
   IGDB_CLIENT_ID?: string;
   IGDB_CLIENT_SECRET?: string;
@@ -89,6 +90,7 @@ export interface LibraryRow extends GameRow {
   steam_playtime_two_weeks_minutes: number | null;
   steam_last_played_at: string | null;
   steam_synced_at: string | null;
+  steam_activity_json: string | null;
   is_up_next: number;
   manual_order: number | null;
   entry_created_at: string;
