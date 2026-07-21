@@ -17,11 +17,11 @@
       "category": "utilities",
       "versions": [
         {
-          "version": "0.7.0",
-          "buildVersion": "8",
-          "date": "2026-07-21",
+          "version": "0.7.1",
+          "buildVersion": "9",
+          "date": "2026-07-22",
           "downloadURL": "https://ahmedalqamzi.github.io/GameVault-Downloads/downloads/GameVault-iOS-unsigned.ipa",
-          "size": 1354203,
+          "size": 1402053,
           "minOSVersion": "17.0"
         }
       ],
