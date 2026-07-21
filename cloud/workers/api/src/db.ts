@@ -2,8 +2,11 @@ import type {
   AgeRating,
   ClientChange,
   CollectionFolder,
+  FriendProfile,
   FranchiseRef,
   Game,
+  GameOwnershipSource,
+  GameTimeToBeat,
   GameRelation,
   GameVideo,
   Genre,
@@ -27,7 +30,10 @@ const LIBRARY_STATUSES = new Set<LibraryStatus>([
   "completed",
   "dropped",
 ]);
-const FRIEND_STATUSES = new Set(["owns", "playing", "completed", "wants_to_play"]);
+const FRIEND_STATUSES = new Set(["owns", "playing", "completed", "wishlist", "wants_to_play"]);
+const OWNERSHIP_PROVIDERS = new Set([
+  "steam", "epic", "gog", "xbox", "playstation", "nintendo", "physical", "other",
+]);
 
 function parseArray<T>(value: string | null | undefined): T[] {
   if (!value) return [];
@@ -71,6 +77,7 @@ export function rowToGame(row: GameRow): Game {
   const steamTags = row.steam_tags_json == null
     ? undefined
     : parseArray<string>(row.steam_tags_json);
+  const timeToBeat = parseObject<GameTimeToBeat>(row.time_to_beat_json);
   return {
     id: row.id,
     name: row.name,
@@ -108,6 +115,7 @@ export function rowToGame(row: GameRow): Game {
       : {}),
     ...(row.proton_confidence ? { protonConfidence: row.proton_confidence } : {}),
     ...(row.steam_metadata_synced_at ? { steamMetadataSyncedAt: row.steam_metadata_synced_at } : {}),
+    ...(timeToBeat ? { timeToBeat } : {}),
     platforms: parseArray(row.platforms_json),
     genres: parseArray(row.genres_json),
     releaseDates: parseArray(row.release_dates_json),
@@ -119,6 +127,9 @@ function rowToEntry(row: LibraryRow): LibraryEntry {
     ? (row.entry_status as LibraryStatus)
     : "wishlist";
   const steamActivity = parseObject<SteamActivityDetails>(row.steam_activity_json);
+  const friends = parseArray<NonNullable<LibraryEntry["friends"]>[number]>(row.friends_json)
+    .map((friend) => friend.status === "wants_to_play" ? { ...friend, status: "wishlist" as const } : friend);
+  const ownershipSources = parseArray<GameOwnershipSource>(row.ownership_sources_json);
   return {
     gameId: row.id,
     status,
@@ -139,9 +150,8 @@ function rowToEntry(row: LibraryRow): LibraryEntry {
     ...(parseArray<NonNullable<LibraryEntry["playSessions"]>[number]>(row.play_sessions_json).length
       ? { playSessions: parseArray<NonNullable<LibraryEntry["playSessions"]>[number]>(row.play_sessions_json) }
       : {}),
-    ...(parseArray<NonNullable<LibraryEntry["friends"]>[number]>(row.friends_json).length
-      ? { friends: parseArray<NonNullable<LibraryEntry["friends"]>[number]>(row.friends_json) }
-      : {}),
+    ...(friends.length ? { friends } : {}),
+    ...(ownershipSources.length ? { ownershipSources } : {}),
     ...(parseArray<string>(row.custom_folder_ids_json).length
       ? { customFolderIds: parseArray<string>(row.custom_folder_ids_json) }
       : {}),
@@ -154,6 +164,9 @@ function rowToEntry(row: LibraryRow): LibraryEntry {
     ...(row.steam_synced_at ? { steamSyncedAt: row.steam_synced_at } : {}),
     ...(steamActivity ? { steamActivity } : {}),
     ...(row.is_up_next ? { isUpNext: true } : {}),
+    ...(row.up_next_position === 1 || row.up_next_position === 2 || row.up_next_position === 3
+      ? { upNextPosition: row.up_next_position }
+      : {}),
     ...(row.manual_order !== null ? { manualOrder: row.manual_order } : {}),
     createdAt: row.entry_created_at,
     updatedAt: row.entry_updated_at,
@@ -175,7 +188,22 @@ function eventFromRow(row: EventRow): SyncEvent {
 
 export function isValidGame(game: Game): boolean {
   const validID = Number.isSafeInteger(game.id) && (game.id > 0 || (game.id < 0 && game.isCustom));
-  return Boolean(validID && game.name.trim().length > 0);
+  const estimate = game.timeToBeat;
+  const validEstimate = estimate === undefined || (
+    Number.isInteger(estimate.submissionCount)
+    && estimate.submissionCount >= 0
+    && [estimate.mainStorySeconds, estimate.mainExtraSeconds, estimate.completionistSeconds]
+      .every((value) => value === undefined || (Number.isInteger(value) && value > 0 && value <= 315_576_000))
+    && (estimate.sourceUpdatedAt === undefined
+      || (Number.isInteger(estimate.sourceUpdatedAt) && estimate.sourceUpdatedAt > 0))
+  );
+  return Boolean(
+    validID
+    && typeof game.name === "string"
+    && game.name.trim().length > 0
+    && game.name.trim().length <= 500
+    && validEstimate,
+  );
 }
 
 function isValidSteamActivity(value: SteamActivityDetails | undefined): boolean {
@@ -263,6 +291,29 @@ export function isValidEntry(entry: LibraryEntry | undefined, gameId: number): b
           && (friend.platform === undefined || friend.platform.length <= 100)
         ))
       ))
+      && (entry.ownershipSources === undefined || (
+        Array.isArray(entry.ownershipSources)
+        && entry.ownershipSources.length <= 50
+        && entry.ownershipSources.every((source) => (
+          typeof source.id === "string"
+          && source.id.trim().length >= 3
+          && source.id.trim().length <= 100
+          && OWNERSHIP_PROVIDERS.has(source.provider)
+          && typeof source.label === "string"
+          && source.label.trim().length > 0
+          && source.label.trim().length <= 100
+          && (source.externalId === undefined || source.externalId.trim().length <= 200)
+          && (source.platform === undefined || source.platform.trim().length <= 100)
+          && (source.playtimeMinutes === undefined
+            || (Number.isInteger(source.playtimeMinutes) && source.playtimeMinutes >= 0))
+          && (source.lastPlayedAt === undefined || !Number.isNaN(Date.parse(source.lastPlayedAt)))
+          && (source.syncMode === undefined
+            || source.syncMode === "automatic" || source.syncMode === "import" || source.syncMode === "manual")
+          && (source.syncedAt === undefined || !Number.isNaN(Date.parse(source.syncedAt)))
+          && !Number.isNaN(Date.parse(source.addedAt))
+          && !Number.isNaN(Date.parse(source.updatedAt))
+        ))
+      ))
       && (entry.customFolderIds === undefined || (
         Array.isArray(entry.customFolderIds)
         && entry.customFolderIds.length <= 100
@@ -278,6 +329,8 @@ export function isValidEntry(entry: LibraryEntry | undefined, gameId: number): b
       && (entry.steamSyncedAt === undefined || !Number.isNaN(Date.parse(entry.steamSyncedAt)))
       && isValidSteamActivity(entry.steamActivity)
       && (entry.isUpNext === undefined || typeof entry.isUpNext === "boolean")
+      && (entry.upNextPosition === undefined
+        || entry.upNextPosition === 1 || entry.upNextPosition === 2 || entry.upNextPosition === 3)
       && (entry.manualOrder === undefined || Number.isFinite(entry.manualOrder))
       && !Number.isNaN(Date.parse(entry.createdAt))
       && !Number.isNaN(Date.parse(entry.updatedAt)),
@@ -291,9 +344,9 @@ function gameStatement(db: D1Database, game: Game): D1PreparedStatement {
       source_updated_at, source_created_at, is_custom, average_artwork_color,
       critic_score, critic_score_count, hype, publishers_json, remasters_json, franchises_json, store_links_json, videos_json,
       age_ratings_json, themes_json, game_modes_json, keywords_json, steam_genres_json, steam_features_json, steam_tags_json,
-      controller_support, linux_support, proton_confidence, steam_metadata_synced_at,
+      controller_support, linux_support, proton_confidence, steam_metadata_synced_at, time_to_beat_json,
       platforms_json, genres_json, release_dates_json, cached_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       name = excluded.name,
       slug = excluded.slug,
@@ -325,6 +378,7 @@ function gameStatement(db: D1Database, game: Game): D1PreparedStatement {
       linux_support = COALESCE(excluded.linux_support, games.linux_support),
       proton_confidence = COALESCE(excluded.proton_confidence, games.proton_confidence),
       steam_metadata_synced_at = COALESCE(excluded.steam_metadata_synced_at, games.steam_metadata_synced_at),
+      time_to_beat_json = COALESCE(excluded.time_to_beat_json, games.time_to_beat_json),
       platforms_json = excluded.platforms_json,
       genres_json = excluded.genres_json,
       release_dates_json = excluded.release_dates_json,
@@ -361,6 +415,7 @@ function gameStatement(db: D1Database, game: Game): D1PreparedStatement {
     game.linuxSupport ?? null,
     game.protonConfidence ?? null,
     game.steamMetadataSyncedAt ?? null,
+    game.timeToBeat === undefined ? null : JSON.stringify(game.timeToBeat),
     JSON.stringify(game.platforms),
     JSON.stringify(game.genres),
     JSON.stringify(game.releaseDates),
@@ -392,6 +447,7 @@ export async function getLibrary(db: D1Database): Promise<LibraryItem[]> {
       e.playthroughs_json,
       e.play_sessions_json,
       e.friends_json,
+      e.ownership_sources_json,
       e.custom_folder_ids_json,
       e.steam_app_id,
       e.steam_playtime_minutes,
@@ -400,6 +456,7 @@ export async function getLibrary(db: D1Database): Promise<LibraryItem[]> {
       e.steam_synced_at,
       e.steam_activity_json,
       e.is_up_next,
+      e.up_next_position,
       e.manual_order,
       e.created_at AS entry_created_at,
       e.updated_at AS entry_updated_at,
@@ -417,6 +474,7 @@ const EMPTY_PREFERENCES: UserPreferences = {
   preferredStores: [],
   followedFranchises: [],
   customFolders: [],
+  friendProfiles: [],
   updatedAt: "1970-01-01T00:00:00.000Z",
 };
 
@@ -455,10 +513,33 @@ function normalizeFollowedFranchises(values: FranchiseRef[]): FranchiseRef[] {
   }).slice(0, 500);
 }
 
+function normalizeFriendProfiles(values: FriendProfile[]): FriendProfile[] {
+  const seenIDs = new Set<string>();
+  const seenSteamIDs = new Set<string>();
+  return values.flatMap((profile) => {
+    const id = profile.id.trim();
+    const name = profile.name.trim();
+    const steamId = profile.steamId?.trim();
+    if (!id || !name || seenIDs.has(id) || (steamId && seenSteamIDs.has(steamId))) return [];
+    seenIDs.add(id);
+    if (steamId) seenSteamIDs.add(steamId);
+    return [{
+      id,
+      name,
+      ...(steamId ? { steamId } : {}),
+      ...(profile.profileUrl?.trim() ? { profileUrl: profile.profileUrl.trim() } : {}),
+      ...(profile.notes?.trim() ? { notes: profile.notes.trim() } : {}),
+      ...(profile.favorite ? { favorite: true } : {}),
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+    }];
+  }).slice(0, 500);
+}
+
 export async function getPreferences(db: D1Database): Promise<UserPreferences> {
   const row = await db.prepare(
     `SELECT preferred_platforms_json, preferred_stores_json, followed_franchises_json,
-            custom_folders_json, steam_id, updated_at
+            custom_folders_json, friend_profiles_json, steam_id, updated_at
      FROM user_preferences WHERE id = 1`,
   ).first<PreferencesRow>();
   if (!row) return EMPTY_PREFERENCES;
@@ -467,6 +548,7 @@ export async function getPreferences(db: D1Database): Promise<UserPreferences> {
     preferredStores: parseArray<string>(row.preferred_stores_json),
     followedFranchises: parseArray<FranchiseRef>(row.followed_franchises_json),
     customFolders: parseArray<CollectionFolder>(row.custom_folders_json),
+    friendProfiles: normalizeFriendProfiles(parseArray<FriendProfile>(row.friend_profiles_json)),
     ...(row.steam_id ? { steamId: row.steam_id } : {}),
     updatedAt: row.updated_at,
   };
@@ -475,7 +557,7 @@ export async function getPreferences(db: D1Database): Promise<UserPreferences> {
 export async function savePreferences(
   db: D1Database,
   input: Pick<UserPreferences, "preferredPlatforms" | "preferredStores">
-    & Partial<Pick<UserPreferences, "followedFranchises" | "customFolders" | "steamId">>,
+    & Partial<Pick<UserPreferences, "followedFranchises" | "customFolders" | "friendProfiles" | "steamId">>,
 ): Promise<UserPreferences> {
   const current = await getPreferences(db);
   const steamId = input.steamId === undefined ? current.steamId : input.steamId.trim() || undefined;
@@ -484,19 +566,21 @@ export async function savePreferences(
     preferredStores: normalizePreferenceValues(input.preferredStores),
     followedFranchises: normalizeFollowedFranchises(input.followedFranchises ?? current?.followedFranchises ?? []),
     customFolders: normalizeCustomFolders(input.customFolders ?? current.customFolders),
+    friendProfiles: normalizeFriendProfiles(input.friendProfiles ?? current.friendProfiles),
     ...(steamId ? { steamId } : {}),
     updatedAt: new Date().toISOString(),
   };
   await db.prepare(
     `INSERT INTO user_preferences (
        id, preferred_platforms_json, preferred_stores_json, followed_franchises_json,
-       custom_folders_json, steam_id, updated_at
-     ) VALUES (1, ?, ?, ?, ?, ?, ?)
+       custom_folders_json, friend_profiles_json, steam_id, updated_at
+     ) VALUES (1, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        preferred_platforms_json = excluded.preferred_platforms_json,
        preferred_stores_json = excluded.preferred_stores_json,
        followed_franchises_json = excluded.followed_franchises_json,
        custom_folders_json = excluded.custom_folders_json,
+       friend_profiles_json = excluded.friend_profiles_json,
        steam_id = excluded.steam_id,
        updated_at = excluded.updated_at`,
   ).bind(
@@ -504,6 +588,7 @@ export async function savePreferences(
     JSON.stringify(preferences.preferredStores),
     JSON.stringify(preferences.followedFranchises),
     JSON.stringify(preferences.customFolders),
+    JSON.stringify(preferences.friendProfiles),
     preferences.steamId ?? null,
     preferences.updatedAt,
   ).run();
@@ -571,13 +656,16 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
   if (duplicate) return { id: change.id, disposition: "duplicate" };
 
   const existing = await db.prepare(
-    `SELECT updated_at, custom_folder_ids_json, steam_app_id, steam_playtime_minutes,
+    `SELECT updated_at, custom_folder_ids_json, ownership_sources_json, up_next_position,
+            steam_app_id, steam_playtime_minutes,
             steam_playtime_two_weeks_minutes, steam_last_played_at, steam_synced_at,
             steam_activity_json
      FROM library_entries WHERE game_id = ?`,
   ).bind(change.game.id).first<{
     updated_at: string;
     custom_folder_ids_json: string;
+    ownership_sources_json: string;
+    up_next_position: number | null;
     steam_app_id: number | null;
     steam_playtime_minutes: number | null;
     steam_playtime_two_weeks_minutes: number | null;
@@ -617,10 +705,23 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
   // additive fields from the current row so an edit from an older app can never
   // erase newer data.
   const entry: LibraryEntry = { ...change.entry! };
+  if (entry.friends) {
+    entry.friends = entry.friends.map((friend) => (
+      friend.status === "wants_to_play" ? { ...friend, status: "wishlist" } : friend
+    ));
+  }
   if (existing) {
     if (entry.customFolderIds === undefined) {
       const folderIDs = parseArray<string>(existing.custom_folder_ids_json);
       if (folderIDs.length) entry.customFolderIds = folderIDs;
+    }
+    if (entry.ownershipSources === undefined) {
+      const ownershipSources = parseArray<GameOwnershipSource>(existing.ownership_sources_json);
+      if (ownershipSources.length) entry.ownershipSources = ownershipSources;
+    }
+    if (entry.upNextPosition === undefined && entry.isUpNext === undefined && existing.up_next_position !== null) {
+      entry.upNextPosition = existing.up_next_position as 1 | 2 | 3;
+      entry.isUpNext = true;
     }
     if (entry.steamAppId === undefined && existing.steam_app_id !== null) entry.steamAppId = existing.steam_app_id;
     if (entry.steamPlaytimeMinutes === undefined && existing.steam_playtime_minutes !== null) {
@@ -641,11 +742,11 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
     `INSERT INTO library_entries (
       game_id, status, notes, personal_rating, story_progress, overall_progress,
       review, completed_at, library_platforms_json, import_sources,
-      tags_json, playthroughs_json, play_sessions_json, friends_json,
+      tags_json, playthroughs_json, play_sessions_json, friends_json, ownership_sources_json,
       custom_folder_ids_json, steam_app_id, steam_playtime_minutes,
       steam_playtime_two_weeks_minutes, steam_last_played_at, steam_synced_at,
-      steam_activity_json, is_up_next, manual_order, created_at, updated_at, deleted_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+      steam_activity_json, is_up_next, up_next_position, manual_order, created_at, updated_at, deleted_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
     ON CONFLICT(game_id) DO UPDATE SET
       status = excluded.status,
       notes = excluded.notes,
@@ -660,6 +761,7 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
       playthroughs_json = excluded.playthroughs_json,
       play_sessions_json = excluded.play_sessions_json,
       friends_json = excluded.friends_json,
+      ownership_sources_json = excluded.ownership_sources_json,
       custom_folder_ids_json = excluded.custom_folder_ids_json,
       steam_app_id = excluded.steam_app_id,
       steam_playtime_minutes = excluded.steam_playtime_minutes,
@@ -668,6 +770,7 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
       steam_synced_at = excluded.steam_synced_at,
       steam_activity_json = excluded.steam_activity_json,
       is_up_next = excluded.is_up_next,
+      up_next_position = excluded.up_next_position,
       manual_order = excluded.manual_order,
       updated_at = excluded.updated_at,
       deleted_at = NULL`,
@@ -686,6 +789,7 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
     JSON.stringify(entry.playthroughs ?? []),
     JSON.stringify(entry.playSessions ?? []),
     JSON.stringify(entry.friends ?? []),
+    JSON.stringify(entry.ownershipSources ?? []),
     JSON.stringify(entry.customFolderIds ?? []),
     entry.steamAppId ?? null,
     entry.steamPlaytimeMinutes ?? null,
@@ -694,6 +798,7 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
     entry.steamSyncedAt ?? null,
     entry.steamActivity === undefined ? null : JSON.stringify(entry.steamActivity),
     entry.isUpNext ? 1 : 0,
+    entry.isUpNext ? entry.upNextPosition ?? 1 : null,
     entry.manualOrder ?? null,
     entry.createdAt,
     entry.updatedAt,
@@ -754,12 +859,8 @@ export async function recordGameRefreshes(
       || old?.themes_json !== JSON.stringify(game.themes ?? [])
       || old?.game_modes_json !== JSON.stringify(game.gameModes ?? [])
       || old?.keywords_json !== JSON.stringify(game.keywords ?? [])
-      || old?.steam_genres_json !== JSON.stringify(game.steamGenres ?? [])
-      || old?.steam_features_json !== JSON.stringify(game.steamFeatures ?? [])
-      || old?.steam_tags_json !== JSON.stringify(game.steamTags ?? [])
-      || old?.controller_support !== (game.controllerSupport ?? null)
-      || old?.linux_support !== (game.linuxSupport ?? null)
-      || old?.proton_confidence !== (game.protonConfidence ?? null);
+      || (game.timeToBeat !== undefined
+        && old?.time_to_beat_json !== JSON.stringify(game.timeToBeat));
     if (!old || releaseDatesChanged || sourceChanged || discoveryChanged) {
       eventStatements.push(db.prepare(
         `INSERT INTO sync_events (event_id, entity, entity_id, operation, payload_json, created_at)

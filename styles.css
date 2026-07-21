@@ -1097,8 +1097,8 @@ a {
 
 .install-tabs {
   display: grid;
-  width: min(660px, 100%);
-  grid-template-columns: repeat(3, 1fr);
+  width: min(840px, 100%);
+  grid-template-columns: repeat(4, 1fr);
   gap: 7px;
   padding: 7px;
   margin: 0 auto 22px;
@@ -1157,6 +1157,7 @@ a {
 
 [data-recommended="android"] [data-install-tab="android"] .recommended,
 [data-recommended="ios"] [data-install-tab="ios"] .recommended,
+[data-recommended="desktop"] [data-install-tab="desktop"] .recommended,
 [data-recommended="web"] [data-install-tab="web"] .recommended {
   display: inline-block;
 }
@@ -1279,7 +1280,40 @@ a {
 
 .android-icon { background: linear-gradient(145deg, #3f8b61, #1d4f34); }
 .ios-icon { background: linear-gradient(145deg, #78746d, #36342f); }
+.desktop-icon { background: linear-gradient(145deg, #6d89ad, #2a3d5c); font-size: 22px; }
 .web-icon { background: linear-gradient(145deg, #d0a454, #704a20); }
+
+.desktop-downloads {
+  display: grid;
+  gap: 8px;
+  margin: 23px 0 18px;
+}
+
+.desktop-downloads a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.16);
+  color: var(--ink);
+  font-size: 11px;
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.desktop-downloads a:hover {
+  border-color: rgba(229, 180, 95, 0.34);
+  background: var(--gold-wash);
+}
+
+.desktop-downloads span {
+  color: var(--faint);
+  font-size: 9px;
+  white-space: nowrap;
+}
 
 .download-card .eyebrow {
   margin-bottom: 7px;

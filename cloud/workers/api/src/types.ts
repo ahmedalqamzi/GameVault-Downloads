@@ -8,6 +8,7 @@ export interface Env {
   IGDB_CLIENT_ID?: string;
   IGDB_CLIENT_SECRET?: string;
   STEAM_API_KEY?: string;
+  STEAM_SESSION_SECRET?: string;
   CORS_ORIGINS?: string;
   IGDB_REFRESH_HOURS?: string;
 }
@@ -44,6 +45,7 @@ export interface GameRow {
   linux_support: string | null;
   proton_confidence: string | null;
   steam_metadata_synced_at: string | null;
+  time_to_beat_json: string | null;
   platforms_json: string;
   genres_json: string;
   release_dates_json: string;
@@ -66,6 +68,7 @@ export interface PreferencesRow {
   preferred_stores_json: string;
   followed_franchises_json: string;
   custom_folders_json: string;
+  friend_profiles_json: string;
   steam_id: string | null;
   updated_at: string;
 }
@@ -84,6 +87,7 @@ export interface LibraryRow extends GameRow {
   playthroughs_json: string;
   play_sessions_json: string;
   friends_json: string;
+  ownership_sources_json: string;
   custom_folder_ids_json: string;
   steam_app_id: number | null;
   steam_playtime_minutes: number | null;
@@ -92,6 +96,7 @@ export interface LibraryRow extends GameRow {
   steam_synced_at: string | null;
   steam_activity_json: string | null;
   is_up_next: number;
+  up_next_position: number | null;
   manual_order: number | null;
   entry_created_at: string;
   entry_updated_at: string;
@@ -106,4 +111,59 @@ export interface EventRow {
   operation: "upsert" | "delete";
   payload_json: string;
   created_at: string;
+}
+
+export interface SteamRelayAccountRow {
+  steam_id: string;
+  persona_name: string;
+  source: "desktop-local";
+  library_synced_at: string | null;
+  friends_synced_at: string | null;
+  relay_seen_at: string;
+  updated_at: string;
+}
+
+export interface SteamRelayGameRow {
+  steam_id: string;
+  app_id: number;
+  name: string;
+  playtime_minutes: number;
+  playtime_two_weeks_minutes: number | null;
+  last_played_at: string | null;
+  installed: number;
+  icon_hash: string | null;
+  synced_at: string;
+}
+
+export interface SteamFriendRow {
+  owner_steam_id: string;
+  steam_id: string;
+  persona_name: string;
+  profile_url: string | null;
+  avatar_url: string | null;
+  avatar_hash: string | null;
+  presence: string;
+  state_message: string | null;
+  game_app_id: number | null;
+  game_name: string | null;
+  last_seen_at: string | null;
+  last_seen_online_at: string | null;
+  last_seen_in_game_at: string | null;
+  relay_seen_at: string;
+  tracked_at: string;
+  source: "local-relay" | "public-profile";
+}
+
+export interface SteamFriendEventRow {
+  id: string;
+  owner_steam_id: string;
+  steam_id: string;
+  kind: string;
+  previous_presence: string | null;
+  presence: string;
+  previous_game_app_id: number | null;
+  game_app_id: number | null;
+  previous_game_name: string | null;
+  game_name: string | null;
+  occurred_at: string;
 }

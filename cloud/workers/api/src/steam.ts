@@ -10,6 +10,7 @@ import type {
   SteamSyncResponse,
 } from "@gamevault/shared";
 import { gamesBySteamAppIds } from "./igdb";
+import { createSteamAuthCode } from "./steam-auth";
 import type { Env, SteamAppMetadataRow } from "./types";
 
 interface SteamOwnedGame {
@@ -451,18 +452,105 @@ async function steamAchievementProgress(
   };
 }
 
+function decodeSteamXML(value: string): string {
+  return value
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", "\"")
+    .replaceAll("&apos;", "'")
+    .replaceAll("&amp;", "&")
+    .trim();
+}
+
+function steamXMLValue(xml: string, ...tags: string[]): string | undefined {
+  for (const tag of tags) {
+    const match = new RegExp(
+      `<${tag}(?:\\s[^>]*)?>(?:<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>|([\\s\\S]*?))</${tag}>`,
+      "i",
+    ).exec(xml);
+    const value = decodeSteamXML(match?.[1] ?? match?.[2] ?? "");
+    if (value) return value;
+  }
+  return undefined;
+}
+
+export function parseSteamAchievementXML(
+  xml: string,
+  appId: number,
+  syncedAt = new Date().toISOString(),
+): SteamAchievementProgress {
+  const blocks = [...xml.matchAll(/<achievement\b([^>]*)>([\s\S]*?)<\/achievement>/gi)];
+  const achievements: SteamAchievement[] = blocks.map((match, index) => {
+    const attributes = match[1] ?? "";
+    const body = match[2] ?? "";
+    const name = steamXMLValue(body, "name") ?? `Achievement ${index + 1}`;
+    const apiName = steamXMLValue(body, "apiname", "apiName")
+      ?? `community-${index}-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+    const achieved = /\bclosed\s*=\s*["']1["']/i.test(attributes);
+    const rawUnlock = steamXMLValue(body, "unlockTimestamp", "unlocktime");
+    const unlockSeconds = rawUnlock ? Number.parseInt(rawUnlock, 10) : 0;
+    return {
+      apiName,
+      name,
+      ...(steamXMLValue(body, "description") ? { description: steamXMLValue(body, "description") } : {}),
+      achieved,
+      ...(achieved && Number.isSafeInteger(unlockSeconds) && unlockSeconds > 0
+        ? { unlockTime: new Date(unlockSeconds * 1_000).toISOString() }
+        : {}),
+    };
+  }).sort((left, right) => {
+    if (left.achieved !== right.achieved) return left.achieved ? -1 : 1;
+    if (left.unlockTime !== right.unlockTime) return (right.unlockTime ?? "").localeCompare(left.unlockTime ?? "");
+    return left.name.localeCompare(right.name);
+  });
+  const unlocked = achievements.filter((item) => item.achieved).length;
+  return {
+    appId,
+    available: achievements.length > 0,
+    ...(steamXMLValue(xml, "gameName", "gameFriendlyName")
+      ? { gameName: steamXMLValue(xml, "gameName", "gameFriendlyName") }
+      : {}),
+    unlocked,
+    total: achievements.length,
+    percent: achievements.length ? Math.round((unlocked / achievements.length) * 1_000) / 10 : 0,
+    achievements,
+    syncedAt,
+  };
+}
+
+async function publicSteamAchievementProgress(
+  steamId: string,
+  appId: number,
+  syncedAt: string,
+): Promise<SteamAchievementProgress> {
+  const response = await fetch(
+    `https://steamcommunity.com/profiles/${steamId}/stats/${appId}/?xml=1&l=english`,
+    { headers: { accept: "application/xml,text/xml;q=0.9" } },
+  ).catch(() => undefined);
+  if (!response) throw new Error("Steam achievement tracking is temporarily unavailable.");
+  if (!response.ok) throw new Error(`Steam could not load achievements (${response.status}).`);
+  const xml = await response.text();
+  if (/\/login\/?(?:[?"'])/i.test(xml) || /<title>\s*Sign In\s*<\/title>/i.test(xml)) {
+    throw new Error("Steam requires the profile and Game details to be public for achievement tracking.");
+  }
+  return parseSteamAchievementXML(xml, appId, syncedAt);
+}
+
 export async function steamAchievements(
   env: Env,
   rawSteamID: string,
   appIDs: number[],
 ): Promise<SteamAchievementsResponse> {
-  if (!env.STEAM_API_KEY) throw new Error("Steam integration is not configured on the GameVault server.");
-  const steamId = await resolveSteamID(env, rawSteamID);
+  const numericSteamID = normalizeSteamID(rawSteamID);
+  const steamId = numericSteamID ?? (env.STEAM_API_KEY ? await resolveSteamID(env, rawSteamID) : undefined);
+  if (!steamId) throw new Error("Use the connected numeric Steam account for achievement tracking.");
   const syncedAt = new Date().toISOString();
   const games: SteamAchievementProgress[] = [];
   for (let start = 0; start < appIDs.length; start += 5) {
     games.push(...await Promise.all(appIDs.slice(start, start + 5)
-      .map((appID) => steamAchievementProgress(env, steamId, appID, syncedAt))));
+      .map((appID) => env.STEAM_API_KEY
+        ? steamAchievementProgress(env, steamId, appID, syncedAt)
+        : publicSteamAchievementProgress(steamId, appID, syncedAt))));
   }
   return { steamId, games, syncedAt };
 }
@@ -560,7 +648,9 @@ export async function steamOpenIDCallback(request: Request, env: Env): Promise<R
   if (!steamID) throw new Error("Steam did not return a valid account ID.");
 
   const target = new URL(appReturn);
+  const code = await createSteamAuthCode(env.DB, steamID);
   target.searchParams.set("steam_id", steamID);
+  target.searchParams.set("steam_code", code);
   target.searchParams.set("steam_auth", "success");
   return Response.redirect(target.toString(), 302);
 }
@@ -625,15 +715,15 @@ export function steamSyntheticGameID(appID: number): number {
   return -(1_000_000_000_000 + appID);
 }
 
-function syntheticSteamGame(source: Required<Pick<SteamOwnedGame, "appid" | "name">>): Game {
+export function steamSyntheticGame(appID: number, name: string): Game {
   return {
-    id: steamSyntheticGameID(source.appid),
-    name: source.name.trim() || `Steam app ${source.appid}`,
+    id: steamSyntheticGameID(appID),
+    name: name.trim() || `Steam app ${appID}`,
     isCustom: true,
     storeLinks: [{
-      id: -source.appid,
+      id: -appID,
       name: "Steam",
-      url: `https://store.steampowered.com/app/${source.appid}`,
+      url: `https://store.steampowered.com/app/${appID}`,
       platform: { id: 6, name: "PC (Microsoft Windows)", abbreviation: "PC" },
     }],
     platforms: [{ id: 6, name: "PC (Microsoft Windows)", abbreviation: "PC" }],
@@ -729,7 +819,7 @@ export async function steamLibrary(env: Env, rawSteamID: string): Promise<SteamS
           : {}),
       };
       return {
-        game: matchedGames.get(source.appid) ?? syntheticSteamGame(source),
+        game: matchedGames.get(source.appid) ?? steamSyntheticGame(source.appid, source.name),
         appId: source.appid,
         playtimeMinutes: source.playtime_forever,
         ...(source.playtime_2weeks !== undefined

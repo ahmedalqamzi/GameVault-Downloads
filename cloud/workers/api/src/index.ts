@@ -1,12 +1,17 @@
 import type {
   ClientChange,
   CollectionFolder,
+  FriendProfile,
+  FriendTrackerResponse,
   LibraryResponse,
   PreferencesResponse,
   PushResponse,
   SearchResponse,
   SteamAppsResponse,
   SteamAchievementsResponse,
+  SteamAuthExchangeResponse,
+  SteamRelaySnapshot,
+  SteamRelayStatus,
   UserPreferences,
 } from "@gamevault/shared";
 import {
@@ -40,6 +45,16 @@ import {
   steamOpenIDCallback,
   steamOpenIDStart,
 } from "./steam";
+import { exchangeSteamAuthCode, steamSessionIdentity } from "./steam-auth";
+import {
+  getFriendTracker,
+  getRelayStatus,
+  normalizeRelaySnapshot,
+  refreshAllSteamFriends,
+  refreshSteamFriends,
+  relaySteamLibrary,
+  saveRelaySnapshot,
+} from "./steam-relay";
 import type { Env } from "./types";
 
 interface PushRequest {
@@ -51,6 +66,7 @@ interface PreferencesRequest {
   preferredStores?: unknown;
   followedFranchises?: unknown;
   customFolders?: unknown;
+  friendProfiles?: unknown;
   steamId?: unknown;
 }
 
@@ -64,6 +80,19 @@ interface SteamAppsRequest {
 
 interface SteamAchievementsRequest extends SteamAppsRequest {
   steamId?: unknown;
+}
+
+interface SteamAuthExchangeRequest {
+  code?: unknown;
+}
+
+async function canAccessSteamAccount(
+  request: Request,
+  env: Env,
+  steamId: string,
+): Promise<boolean> {
+  const sessionIdentity = await steamSessionIdentity(request, env);
+  return sessionIdentity === steamId || await isAuthorized(request, env);
 }
 
 function isValidPreferenceList(value: unknown): value is string[] {
@@ -108,6 +137,36 @@ export function isValidCustomFolderList(value: unknown): value is CollectionFold
       && typeof (item as { createdAt?: unknown }).createdAt === "string"
       && !Number.isNaN(Date.parse((item as { createdAt: string }).createdAt))
     ));
+}
+
+export function isValidFriendProfileList(value: unknown): value is FriendProfile[] {
+  return Array.isArray(value)
+    && value.length <= 500
+    && value.every((item) => {
+      if (item === null || typeof item !== "object") return false;
+      const profile = item as Record<string, unknown>;
+      const profileURL = typeof profile.profileUrl === "string" ? profile.profileUrl.trim() : undefined;
+      let validProfileURL = profileURL === undefined;
+      if (profileURL !== undefined && profileURL.length <= 1_000) {
+        try { validProfileURL = new URL(profileURL).protocol === "https:"; } catch { validProfileURL = false; }
+      }
+      return typeof profile.id === "string"
+        && profile.id.trim().length >= 3
+        && profile.id.trim().length <= 100
+        && typeof profile.name === "string"
+        && profile.name.trim().length > 0
+        && profile.name.trim().length <= 100
+        && (profile.steamId === undefined
+          || (typeof profile.steamId === "string" && isValidSteamIdentity(profile.steamId)))
+        && validProfileURL
+        && (profile.notes === undefined
+          || (typeof profile.notes === "string" && profile.notes.length <= 5_000))
+        && (profile.favorite === undefined || typeof profile.favorite === "boolean")
+        && typeof profile.createdAt === "string"
+        && !Number.isNaN(Date.parse(profile.createdAt))
+        && typeof profile.updatedAt === "string"
+        && !Number.isNaN(Date.parse(profile.updatedAt));
+    });
 }
 
 function monthRange(value: string): { start: number; end: number } | undefined {
@@ -238,6 +297,20 @@ async function routePublicSteam(
   path: string,
   url: URL,
 ): Promise<Response | undefined> {
+  if (path === "/v1/steam/auth/exchange" && request.method === "POST") {
+    const body = await parseJson<SteamAuthExchangeRequest>(request);
+    if (!body || typeof body.code !== "string") {
+      return apiError(request, env, 422, "invalid_auth_code", "Steam did not return a valid sign-in code.");
+    }
+    const session = await exchangeSteamAuthCode(env, body.code);
+    if (!session) {
+      return apiError(request, env, 401, "invalid_auth_code", "This Steam sign-in code is invalid, expired, or already used.");
+    }
+    return json(request, env, session satisfies SteamAuthExchangeResponse, {
+      headers: { "cache-control": "no-store" },
+    });
+  }
+
   if (path === "/v1/steam/auth/start" && request.method === "GET") {
     const returnTarget = url.searchParams.get("return_to") ?? "";
     try {
@@ -277,6 +350,49 @@ async function routePublicSteam(
     });
   }
 
+  if (path === "/v1/steam/relay" && request.method === "POST") {
+    const contentLength = Number.parseInt(request.headers.get("content-length") ?? "0", 10);
+    if (Number.isFinite(contentLength) && contentLength > 8_000_000) {
+      return apiError(request, env, 413, "request_too_large", "The local Steam snapshot is too large.");
+    }
+    const snapshot = normalizeRelaySnapshot(await parseJson<unknown>(request));
+    if (!snapshot) {
+      return apiError(request, env, 422, "invalid_relay_snapshot", "The local Steam snapshot is invalid.");
+    }
+    if (!(await canAccessSteamAccount(request, env, snapshot.steamId))) {
+      return apiError(request, env, 401, "unauthorized", "Sign in to the matching Steam account before uploading this snapshot.");
+    }
+    await saveRelaySnapshot(env.DB, snapshot);
+    const status = await getRelayStatus(env.DB, snapshot.steamId);
+    return json(request, env, { status } satisfies { status?: SteamRelayStatus }, {
+      headers: { "cache-control": "no-store" },
+    });
+  }
+
+  if (path === "/v1/steam/relay/status" && request.method === "GET") {
+    const steamId = normalizeSteamID(url.searchParams.get("steam_id") ?? "")
+      ?? await steamSessionIdentity(request, env);
+    if (!steamId || !(await canAccessSteamAccount(request, env, steamId))) {
+      return apiError(request, env, 401, "unauthorized", "Sign in to Steam to view relay status.");
+    }
+    const status = await getRelayStatus(env.DB, steamId);
+    return json(request, env, { status } satisfies { status?: SteamRelayStatus }, {
+      headers: { "cache-control": "no-store" },
+    });
+  }
+
+  if (path === "/v1/friends" && (request.method === "GET" || request.method === "POST")) {
+    const steamId = normalizeSteamID(url.searchParams.get("steam_id") ?? "")
+      ?? await steamSessionIdentity(request, env);
+    if (!steamId || !(await canAccessSteamAccount(request, env, steamId))) {
+      return apiError(request, env, 401, "unauthorized", "Sign in to Steam to view the friend tracker.");
+    }
+    if (request.method === "POST") await refreshSteamFriends(env.DB, steamId);
+    return json(request, env, await getFriendTracker(env.DB, steamId) satisfies FriendTrackerResponse, {
+      headers: { "cache-control": "no-store" },
+    });
+  }
+
   if (path === "/v1/steam/achievements" && request.method === "POST") {
     const contentLength = Number.parseInt(request.headers.get("content-length") ?? "0", 10);
     if (Number.isFinite(contentLength) && contentLength > 2_048) {
@@ -290,9 +406,8 @@ async function routePublicSteam(
     if (!appIDs) {
       return apiError(request, env, 422, "invalid_app_ids", "Provide 1–10 valid Steam app IDs.");
     }
-    if (!env.STEAM_API_KEY) {
-      return apiError(request, env, 503, "steam_not_configured", "Steam integration is not configured on the GameVault service.");
-    }
+    const steamId = normalizeSteamID(body.steamId);
+    if (!steamId) return apiError(request, env, 422, "invalid_steam_id", "Connect a numeric Steam account before syncing achievements.");
     if (env.STEAM_ACHIEVEMENT_RATE_LIMITER) {
       const outcome = await env.STEAM_ACHIEVEMENT_RATE_LIMITER.limit({ key: steamClientKey(request) });
       if (!outcome.success) {
@@ -300,7 +415,7 @@ async function routePublicSteam(
       }
     }
     try {
-      const result = await steamAchievements(env, body.steamId, appIDs);
+      const result = await steamAchievements(env, steamId, appIDs);
       return json(request, env, result satisfies SteamAchievementsResponse, {
         headers: { "cache-control": "no-store" },
       });
@@ -325,9 +440,8 @@ async function routePublicSteam(
   if (!body || typeof body.steamId !== "string" || !isValidSteamIdentity(body.steamId)) {
     return apiError(request, env, 422, "invalid_steam_id", "Enter a valid 17-digit Steam ID or public profile URL.");
   }
-  if (!env.STEAM_API_KEY) {
-    return apiError(request, env, 503, "steam_not_configured", "Steam integration is not configured on the GameVault service.");
-  }
+  const requestedSteamID = normalizeSteamID(body.steamId);
+  if (!requestedSteamID) return apiError(request, env, 422, "invalid_steam_id", "Connect a numeric Steam account before importing its library.");
   if (env.STEAM_RATE_LIMITER) {
     const outcome = await env.STEAM_RATE_LIMITER.limit({ key: steamClientKey(request) });
     if (!outcome.success) {
@@ -336,7 +450,23 @@ async function routePublicSteam(
   }
 
   try {
-    const result = await steamLibrary(env, body.steamId);
+    const accountAuthorized = await canAccessSteamAccount(request, env, requestedSteamID);
+    if (!accountAuthorized && !env.STEAM_API_KEY) {
+      return apiError(request, env, 401, "unauthorized", "Sign in to the matching Steam account before importing its local library.");
+    }
+    const relayResult = accountAuthorized ? await relaySteamLibrary(env, requestedSteamID) : undefined;
+    const result = relayResult ?? (env.STEAM_API_KEY
+      ? await steamLibrary(env, requestedSteamID)
+      : undefined);
+    if (!result) {
+      return apiError(
+        request,
+        env,
+        409,
+        "steam_relay_pending",
+        "No local Steam library snapshot is available yet. Open GameVault Desktop on a computer where Steam is signed in, then sync again.",
+      );
+    }
     await cacheGames(env.DB, result.games.map((item) => item.game));
     return json(request, env, result, { headers: { "cache-control": "no-store" } });
   } catch (error) {
@@ -368,11 +498,15 @@ async function route(request: Request, env: Env): Promise<Response> {
   const path = url.pathname.replace(/\/$/, "") || "/";
 
   if (path === "/health" && request.method === "GET") {
+    const relay = await env.DB.prepare("SELECT 1 AS available FROM steam_relay_accounts LIMIT 1")
+      .first<{ available: number }>().catch(() => undefined);
     return json(request, env, {
       ok: true,
       service: "gamevault-api",
       igdbConfigured: Boolean(env.IGDB_CLIENT_ID && env.IGDB_CLIENT_SECRET),
-      steamConfigured: Boolean(env.STEAM_API_KEY),
+      steamConfigured: Boolean(env.STEAM_API_KEY || relay),
+      steamOpenIDConfigured: Boolean(env.STEAM_SESSION_SECRET || env.SYNC_TOKEN),
+      steamRelayAvailable: Boolean(relay),
       time: new Date().toISOString(),
     });
   }
@@ -380,8 +514,9 @@ async function route(request: Request, env: Env): Promise<Response> {
   const metadataResponse = await routePublicMetadata(request, env, path, url);
   if (metadataResponse) return metadataResponse;
 
-  // Steam imports use only public profile data and return it directly to the
-  // requesting device. This keeps phone-only mode independent of cloud sync.
+  // Steam account sessions are separate from the owner's library-sync token.
+  // The preferred owned-library source is an outbound snapshot from a signed-in
+  // desktop client; a configured Web API key is only a public-profile fallback.
   const steamResponse = await routePublicSteam(request, env, path, url);
   if (steamResponse) return steamResponse;
 
@@ -413,6 +548,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       || !isValidPreferenceList(body.preferredStores)
       || (body.followedFranchises !== undefined && !isValidFranchisePreferenceList(body.followedFranchises))
       || (body.customFolders !== undefined && !isValidCustomFolderList(body.customFolders))
+      || (body.friendProfiles !== undefined && !isValidFriendProfileList(body.friendProfiles))
       || (body.steamId !== undefined
         && (typeof body.steamId !== "string" || (body.steamId.trim() && !normalizeSteamID(body.steamId))))
     ) {
@@ -423,6 +559,7 @@ async function route(request: Request, env: Env): Promise<Response> {
       preferredStores: body.preferredStores,
       ...(body.followedFranchises !== undefined ? { followedFranchises: body.followedFranchises } : {}),
       ...(body.customFolders !== undefined ? { customFolders: body.customFolders } : {}),
+      ...(body.friendProfiles !== undefined ? { friendProfiles: body.friendProfiles } : {}),
       ...(body.steamId !== undefined
         ? { steamId: body.steamId.trim() ? normalizeSteamID(body.steamId)! : "" }
         : {}),
@@ -509,8 +646,11 @@ export default {
     }
   },
 
-  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(refreshTrackedGames(env));
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    const tasks: Promise<unknown>[] = [];
+    if (controller.cron === "0 */6 * * *") tasks.push(refreshTrackedGames(env));
+    tasks.push(refreshAllSteamFriends(env.DB));
+    ctx.waitUntil(Promise.allSettled(tasks).then(() => undefined));
   },
 } satisfies ExportedHandler<Env>;
 

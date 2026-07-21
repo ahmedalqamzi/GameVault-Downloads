@@ -54,15 +54,35 @@ tabs.forEach((tab, index) => {
 const userAgent = navigator.userAgent.toLowerCase();
 const isIOS = /iphone|ipad|ipod/.test(userAgent);
 const isAndroid = /android/.test(userAgent);
-const recommended = isIOS ? "ios" : isAndroid ? "android" : "web";
+const isWindows = /windows nt/.test(userAgent);
+const isMac = !isIOS && /macintosh|mac os x/.test(userAgent);
+const isLinux = !isAndroid && /linux|x11/.test(userAgent);
+const recommended = isIOS ? "ios" : isAndroid ? "android" : (isWindows || isMac || isLinux) ? "desktop" : "web";
 document.documentElement.dataset.recommended = recommended;
+selectTab(recommended);
 
+let smartDownload;
+let smartLabel;
 if (isIOS) {
+  smartDownload = "downloads/GameVault-iOS-unsigned.ipa";
+  smartLabel = "Download for iPhone";
+} else if (isWindows) {
+  smartDownload = "https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-windows-x64-setup.exe";
+  smartLabel = "Download for Windows";
+} else if (isMac) {
+  smartDownload = "https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-mac-arm64.dmg";
+  smartLabel = "Download for macOS";
+} else if (isLinux) {
+  smartDownload = "https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-linux-x86_64.AppImage";
+  smartLabel = "Download for Linux";
+}
+
+if (smartDownload) {
   document.querySelectorAll("[data-smart-download]").forEach((link) => {
-    link.href = "downloads/GameVault-iOS-unsigned.ipa";
+    link.href = smartDownload;
   });
   document.querySelectorAll("[data-smart-download-label]").forEach((label) => {
-    label.textContent = "Download for iPhone";
+    label.textContent = smartLabel;
   });
 } else if (!isAndroid) {
   document.querySelectorAll("[data-smart-download]").forEach((link) => {

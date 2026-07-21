@@ -28,9 +28,11 @@ echo "Creating your private D1 database…"
 npx wrangler d1 create "$database_name" --binding DB --update-config -c workers/api/wrangler.jsonc
 
 sync_token="$(node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))")"
+steam_session_secret="$(node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))")"
 umask 077
 printf "%s\n" "$sync_token" > .gamevault-sync-token
 printf "%s\n" "$sync_token" | npx wrangler secret put SYNC_TOKEN -c workers/api/wrangler.jsonc
+printf "%s\n" "$steam_session_secret" | npx wrangler secret put STEAM_SESSION_SECRET -c workers/api/wrangler.jsonc
 
 printf "Add IGDB artwork, search, release dates, and trailers now? [y/N]: "
 read -r add_igdb
@@ -41,10 +43,10 @@ if [[ "$add_igdb" =~ ^[Yy]$ ]]; then
   npx wrangler secret put IGDB_CLIENT_SECRET -c workers/api/wrangler.jsonc
 fi
 
-printf "Add Steam library, playtime, and achievement import now? [y/N]: "
+printf "Add an optional Steam Web API fallback for public profiles? [y/N]: "
 read -r add_steam
 if [[ "$add_steam" =~ ^[Yy]$ ]]; then
-  echo "Wrangler will securely prompt for your Steam Web API key."
+  echo "Wrangler will securely prompt for your optional Steam Web API key. The desktop relay does not need it."
   npx wrangler secret put STEAM_API_KEY -c workers/api/wrangler.jsonc
 fi
 

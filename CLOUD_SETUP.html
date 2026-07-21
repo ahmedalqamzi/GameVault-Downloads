@@ -18,7 +18,7 @@
 
       <section class="doc-section">
         <h2>What you need</h2>
-        <ul><li>A Windows, macOS, or Linux computer</li><li>Node.js 22 or newer</li><li>A free Cloudflare account</li><li>About 10 minutes</li><li>Optional Twitch/IGDB credentials only if you want your own metadata proxy</li><li>One optional Steam Web API key if you want library, playtime, and achievement import</li></ul>
+        <ul><li>A Windows, macOS, or Linux computer</li><li>Node.js 22 or newer</li><li>A free Cloudflare account</li><li>About 10 minutes</li><li>Optional Twitch/IGDB credentials only if you want your own metadata proxy</li><li>An optional Steam Web API key only for a public-profile fallback</li></ul>
         <div class="doc-card"><strong>Your app does not wait for this.</strong><p>Install GameVault and use phone-only mode immediately. You can connect cloud later without reinstalling.</p></div>
       </section>
 
@@ -38,7 +38,7 @@
 
       <section class="doc-section">
         <h2>What the helper does</h2>
-        <p>It installs Cloudflare Wrangler, creates your D1 database, generates a random 64-character token, stores that token as a Worker secret, applies the complete GameVault schema, and deploys the API. It can also prompt securely for optional IGDB credentials and a Steam Web API key.</p>
+        <p>It installs Cloudflare Wrangler, creates your D1 database, generates separate random sync and Steam-session secrets, stores them as Worker secrets, applies the complete additive GameVault schema, and deploys the API. It can also prompt securely for optional IGDB credentials and a Steam Web API fallback key.</p>
         <p>The kit contains placeholders only. It does not contain another person's account, token, database ID, private game library, or metadata credentials.</p>
       </section>
 
@@ -48,9 +48,9 @@
       </section>
 
       <section class="doc-section">
-        <h2>Optional: enable Steam library import</h2>
-        <p>Steam OpenID lets each phone user sign in on Steam's page without sharing a password or API key. Valve still requires the Worker operator to configure one server-side Web API key before it can request a visibility-permitted owned library, platform playtime, and achievements. Create it once on the <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noreferrer">Steam Web API key page</a>; the setup helper stores it as a Worker secret.</p>
-        <p>Steam popular tags, features, full/partial controller support, native Linux availability, and ProtonDB compatibility work without that key. The Worker retrieves those app-level records and caches them in D1.</p>
+        <h2>Optional: add a Steam Web API fallback</h2>
+        <p>Steam OpenID lets a phone user sign in on Steam's page without sharing a password or API key. A signed-in GameVault desktop can then read Steam's public local library/friend cache and send an outbound HTTPS snapshot without opening an inbound PC port or reading Steam login secrets. Phones retain the most recent owned-library, playtime, friend, and achievement snapshot when that PC is off.</p>
+        <p>A Worker operator may optionally create one key on the <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noreferrer">Steam Web API key page</a> as a visibility-permitted public-profile fallback. Steam OpenID, the desktop relay, popular tags, features, full/partial controller support, native Linux availability, and ProtonDB compatibility do not require it.</p>
       </section>
 
       <section class="doc-section">

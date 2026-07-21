@@ -2,4 +2,9 @@
 SYNC_TOKEN="replace-with-a-long-random-token"
 IGDB_CLIENT_ID="your-twitch-client-id"
 IGDB_CLIENT_SECRET="your-twitch-client-secret"
-STEAM_API_KEY="your-steam-web-api-key"
+# Optional: a dedicated HMAC secret for 30-day Steam sessions. When omitted,
+# local development derives this from SYNC_TOKEN.
+STEAM_SESSION_SECRET="replace-with-a-second-long-random-token"
+# Optional fallback for public owned-library and achievement API reads. The
+# normal desktop relay and Steam Store/ProtonDB metadata do not require it.
+STEAM_API_KEY=""

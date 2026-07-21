@@ -119,6 +119,15 @@ interface IGDBExternalGameMapping {
   game?: number;
 }
 
+interface IGDBGameTimeToBeat {
+  game_id?: number;
+  hastily?: number;
+  normally?: number;
+  completely?: number;
+  count?: number;
+  updated_at?: number;
+}
+
 const GAME_FIELDS = [
   "id",
   "name",
@@ -399,6 +408,63 @@ export function normalizeIGDBGame(source: IGDBGame): Game {
   };
 }
 
+export function normalizeIGDBTimeToBeat(source: IGDBGameTimeToBeat): Game["timeToBeat"] {
+  const normalizeSeconds = (value: number | undefined): number | undefined => (
+    Number.isSafeInteger(value) && value! > 0 ? value : undefined
+  );
+  return {
+    ...(normalizeSeconds(source.hastily) !== undefined
+      ? { mainStorySeconds: normalizeSeconds(source.hastily) }
+      : {}),
+    ...(normalizeSeconds(source.normally) !== undefined
+      ? { mainExtraSeconds: normalizeSeconds(source.normally) }
+      : {}),
+    ...(normalizeSeconds(source.completely) !== undefined
+      ? { completionistSeconds: normalizeSeconds(source.completely) }
+      : {}),
+    submissionCount: Number.isSafeInteger(source.count) && source.count! >= 0 ? source.count! : 0,
+    ...(Number.isSafeInteger(source.updated_at) && source.updated_at! > 0
+      ? { sourceUpdatedAt: source.updated_at }
+      : {}),
+  };
+}
+
+async function withTimeToBeat(env: Env, games: Game[]): Promise<Game[]> {
+  const ids = [...new Set(games.map((game) => game.id))]
+    .filter((id) => Number.isSafeInteger(id) && id > 0);
+  if (ids.length === 0) return games;
+  const byGameID = new Map<number, NonNullable<Game["timeToBeat"]>>();
+  try {
+    for (let start = 0; start < ids.length; start += 500) {
+      const chunk = ids.slice(start, start + 500);
+      const rows = await queryIGDBEndpoint<IGDBGameTimeToBeat>(
+        env,
+        "game_time_to_beats",
+        `fields game_id,hastily,normally,completely,count,updated_at; where game_id = (${chunk.join(",")}); limit ${chunk.length};`,
+      );
+      for (const row of rows) {
+        if (!Number.isSafeInteger(row.game_id) || row.game_id! <= 0) continue;
+        const normalized = normalizeIGDBTimeToBeat(row);
+        if (normalized && (
+          normalized.mainStorySeconds
+          || normalized.mainExtraSeconds
+          || normalized.completionistSeconds
+        )) byGameID.set(row.game_id!, normalized);
+      }
+      if (start + 500 < ids.length) await pauseBetweenIGDBBatches();
+    }
+  } catch (error) {
+    // Completion estimates are useful enrichment, not a reason to make search
+    // or sync unavailable. Existing cached estimates are retained by the DB.
+    console.warn("igdb_time_to_beat_failed", error instanceof Error ? error.message : String(error));
+    return games;
+  }
+  return games.map((game) => {
+    const timeToBeat = byGameID.get(game.id);
+    return timeToBeat ? { ...game, timeToBeat } : game;
+  });
+}
+
 export async function searchGames(env: Env, rawQuery: string): Promise<Game[]> {
   const query = escapeIGDBSearch(rawQuery);
   if (query.length < 2) return [];
@@ -406,7 +472,7 @@ export async function searchGames(env: Env, rawQuery: string): Promise<Game[]> {
     env,
     `search "${query}"; fields ${GAME_FIELDS}; where version_parent = null; limit 40;`,
   );
-  return rows.map(normalizeIGDBGame);
+  return withTimeToBeat(env, rows.map(normalizeIGDBGame));
 }
 
 export async function discoverGames(
@@ -418,7 +484,7 @@ export async function discoverGames(
     ? `where version_parent = null & first_release_date >= ${now}; sort first_release_date asc;`
     : "where version_parent = null; sort created_at desc;";
   const rows = await queryIGDB(env, `fields ${GAME_FIELDS}; ${clause} limit 50;`);
-  return rows.map(normalizeIGDBGame);
+  return withTimeToBeat(env, rows.map(normalizeIGDBGame));
 }
 
 export async function calendarGames(
@@ -433,7 +499,7 @@ export async function calendarGames(
     env,
     `fields ${GAME_FIELDS}; where version_parent = null & first_release_date >= ${start} & first_release_date < ${end}; sort hypes desc; limit 500;`,
   );
-  return rows.map(normalizeIGDBGame);
+  return withTimeToBeat(env, rows.map(normalizeIGDBGame));
 }
 
 export async function gamesByIds(env: Env, ids: number[]): Promise<Game[]> {
@@ -443,7 +509,7 @@ export async function gamesByIds(env: Env, ids: number[]): Promise<Game[]> {
     env,
     `fields ${GAME_FIELDS}; where id = (${cleanIds.join(",")}); limit ${cleanIds.length};`,
   );
-  return rows.map(normalizeIGDBGame);
+  return withTimeToBeat(env, rows.map(normalizeIGDBGame));
 }
 
 export async function gamesBySteamAppIds(env: Env, appIds: number[]): Promise<Map<number, Game>> {
@@ -493,7 +559,7 @@ export async function gamesInFranchise(
     env,
     `fields ${GAME_FIELDS}; where ${field} = ${id} & version_parent = null; sort first_release_date asc; limit 500;`,
   );
-  const games = rows.map(normalizeIGDBGame);
+  const games = await withTimeToBeat(env, rows.map(normalizeIGDBGame));
   const includedIDs = new Set(games.map((game) => game.id));
   const missingRemasterIDs = games
     .flatMap((game) => game.remasters?.map((remaster) => remaster.id) ?? [])

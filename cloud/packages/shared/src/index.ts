@@ -63,6 +63,17 @@ export interface GameVideo {
   videoId: string;
 }
 
+export interface GameTimeToBeat {
+  /** Average time to reach the credits without spending notable time on extras. */
+  mainStorySeconds?: number;
+  /** Average time to reach the credits while completing some optional content. */
+  mainExtraSeconds?: number;
+  /** Average time to reach 100% completion. */
+  completionistSeconds?: number;
+  submissionCount: number;
+  sourceUpdatedAt?: number;
+}
+
 export interface GameRelation {
   id: number;
   name: string;
@@ -73,6 +84,7 @@ export interface UserPreferences {
   preferredStores: string[];
   followedFranchises: FranchiseRef[];
   customFolders: CollectionFolder[];
+  friendProfiles: FriendProfile[];
   steamId?: string;
   updatedAt: string;
 }
@@ -144,7 +156,150 @@ export interface SteamAchievementsResponse {
   syncedAt: string;
 }
 
-export type FriendGameStatus = "owns" | "playing" | "completed" | "wants_to_play";
+export type FriendPresenceState =
+  | "in_game"
+  | "online"
+  | "busy"
+  | "away"
+  | "snooze"
+  | "looking_to_trade"
+  | "looking_to_play"
+  | "offline"
+  | "private"
+  | "unavailable";
+
+export interface FriendProfile {
+  id: string;
+  name: string;
+  steamId?: string;
+  profileUrl?: string;
+  notes?: string;
+  favorite?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SteamFriendPresence {
+  steamId: string;
+  personaName: string;
+  profileUrl?: string;
+  avatarUrl?: string;
+  presence: FriendPresenceState;
+  stateMessage?: string;
+  gameAppId?: number;
+  gameName?: string;
+  lastSeenAt?: string;
+  lastSeenOnlineAt?: string;
+  lastSeenInGameAt?: string;
+  trackedAt: string;
+  source: "local-relay" | "public-profile";
+}
+
+export type FriendPresenceEventKind =
+  | "added"
+  | "online"
+  | "offline"
+  | "game_started"
+  | "game_changed"
+  | "game_stopped"
+  | "name_changed";
+
+export interface FriendPresenceEvent {
+  id: string;
+  steamId: string;
+  kind: FriendPresenceEventKind;
+  previousPresence?: FriendPresenceState;
+  presence: FriendPresenceState;
+  previousGameAppId?: number;
+  gameAppId?: number;
+  previousGameName?: string;
+  gameName?: string;
+  occurredAt: string;
+}
+
+export interface FriendTrackerResponse {
+  steamId: string;
+  friends: SteamFriendPresence[];
+  events: FriendPresenceEvent[];
+  syncedAt?: string;
+  relayAvailable: boolean;
+}
+
+export interface SteamAuthExchangeResponse {
+  steamId: string;
+  token: string;
+  expiresAt: string;
+}
+
+export interface SteamLocalAccount {
+  steamId: string;
+  personaName: string;
+  mostRecent: boolean;
+  cachedAppCount: number;
+}
+
+export interface SteamRelayFriend {
+  steamId: string;
+  personaName: string;
+  avatarHash?: string;
+}
+
+export interface SteamRelayGame {
+  appId: number;
+  name: string;
+  playtimeMinutes: number;
+  playtimeTwoWeeksMinutes?: number;
+  lastPlayedAt?: string;
+  installed?: boolean;
+  iconHash?: string;
+}
+
+export interface SteamRelaySnapshot {
+  steamId: string;
+  personaName: string;
+  games: SteamRelayGame[];
+  friends: SteamRelayFriend[];
+  syncedAt: string;
+  source: "desktop-local";
+}
+
+export interface SteamRelayStatus {
+  steamId: string;
+  personaName: string;
+  gameCount: number;
+  friendCount: number;
+  librarySyncedAt?: string;
+  friendsSyncedAt?: string;
+  relaySeenAt: string;
+}
+
+export type OwnershipProvider =
+  | "steam"
+  | "epic"
+  | "gog"
+  | "xbox"
+  | "playstation"
+  | "nintendo"
+  | "physical"
+  | "other";
+
+export interface GameOwnershipSource {
+  id: string;
+  provider: OwnershipProvider;
+  label: string;
+  externalId?: string;
+  platform?: string;
+  playtimeMinutes?: number;
+  lastPlayedAt?: string;
+  syncMode?: "automatic" | "import" | "manual";
+  syncedAt?: string;
+  addedAt: string;
+  updatedAt: string;
+}
+
+// `wants_to_play` remains readable for pre-0.7 backups. New writes use the
+// canonical Wishlist status so GameVault never creates two equivalent states.
+export type FriendGameStatus = "owns" | "playing" | "completed" | "wishlist" | "wants_to_play";
 
 export interface FriendActivity {
   id: string;
@@ -185,6 +340,7 @@ export interface Game {
   linuxSupport?: LinuxSupport;
   protonConfidence?: string;
   steamMetadataSyncedAt?: string;
+  timeToBeat?: GameTimeToBeat;
   platforms: Platform[];
   genres: Genre[];
   releaseDates: ReleaseDate[];
@@ -205,6 +361,7 @@ export interface LibraryEntry {
   playthroughs?: Playthrough[];
   playSessions?: PlaySession[];
   friends?: FriendActivity[];
+  ownershipSources?: GameOwnershipSource[];
   customFolderIds?: string[];
   steamAppId?: number;
   steamPlaytimeMinutes?: number;
@@ -213,6 +370,7 @@ export interface LibraryEntry {
   steamSyncedAt?: string;
   steamActivity?: SteamActivityDetails;
   isUpNext?: boolean;
+  upNextPosition?: 1 | 2 | 3;
   manualOrder?: number;
   createdAt: string;
   updatedAt: string;

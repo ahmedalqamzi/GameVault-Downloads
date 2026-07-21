@@ -1,0 +1,14 @@
+{
+  "version": "0.7.0",
+  "releasedAt": "2026-07-21T17:10:00Z",
+  "androidVersionCode": 9,
+  "minimumAndroidSdk": 26,
+  "androidUrl": "https://ahmedalqamzi.github.io/GameVault-Downloads/downloads/GameVault-Android.apk",
+  "androidSha256": "881dd47296d8e08ff465844f1137806541eaa7e8b78a15d042e8efb8c16a4c26",
+  "notes": [
+    "Owned-only My Library with tile-based Collection folders and Franchises",
+    "Steam desktop relay for owned games, playtime, achievements, and friends",
+    "Checkbox filters in Collection and Catalog, including controller and Proton metadata",
+    "How long to beat, Up Next 3, friend tracking, trailer fixes, and mobile performance work"
+  ]
+}

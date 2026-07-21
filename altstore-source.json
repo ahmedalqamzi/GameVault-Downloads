@@ -1,0 +1,34 @@
+{
+  "name": "GameVault",
+  "identifier": "app.gamevault.source",
+  "subtitle": "A private, local-first game library",
+  "description": "Official unsigned GameVault builds for SideStore and AltStore.",
+  "iconURL": "https://ahmedalqamzi.github.io/GameVault-Downloads/assets/icon-1024.png",
+  "website": "https://ahmedalqamzi.github.io/GameVault-Downloads/",
+  "apps": [
+    {
+      "name": "GameVault",
+      "bundleIdentifier": "app.gamevault.personal",
+      "developerName": "GameVault",
+      "subtitle": "Your games, releases, progress, and friends",
+      "localizedDescription": "A local-first game library with Collection tiles, Catalog filters, franchises, release tracking, Steam progress, achievements, friends, and optional private sync.",
+      "iconURL": "https://ahmedalqamzi.github.io/GameVault-Downloads/assets/icon-1024.png",
+      "tintColor": "B8893F",
+      "category": "utilities",
+      "versions": [
+        {
+          "version": "0.7.0",
+          "buildVersion": "8",
+          "date": "2026-07-21",
+          "downloadURL": "https://ahmedalqamzi.github.io/GameVault-Downloads/downloads/GameVault-iOS-unsigned.ipa",
+          "size": 1354203,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    }
+  ]
+}

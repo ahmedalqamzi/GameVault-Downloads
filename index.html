@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#11110f" />
     <meta
       name="description"
-      content="Download GameVault for Android or iPhone, install the private game library as a web app, and see exactly how it works."
+      content="Download GameVault 0.7.0 for Android, iPhone, Windows, Linux, or macOS, or install the local-first game library as a web app."
     />
     <meta property="og:title" content="GameVault — Your games, in one place" />
     <meta
@@ -64,7 +64,7 @@
             <p class="eyebrow"><span></span> Local first. Cloud when you want it.</p>
             <h1>Your whole game life, <em>finally in view.</em></h1>
             <p class="hero-lede">
-              Keep releases, collection folders, Steam progress, franchise timelines, trailers, and play history together. Version 0.6.0 adds Steam library import, platform playtime, and achievement tracking alongside the full tick-box filter system.
+              Keep owned games, a separate Wishlist, collection folders, friends, Steam progress, time-to-beat estimates, franchise timelines, trailers, and play history together. Version 0.7.0 brings the full checkbox filter system to both Collection and Catalog.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="downloads/GameVault-Android.apk" download data-smart-download>
@@ -77,7 +77,7 @@
               <span class="status-dot"></span>
               <span>No account or online service required</span>
               <span aria-hidden="true">·</span>
-              <span>Android 8+ / iOS 17+</span>
+              <span>Android 8+ · iOS 17+ · Windows · Linux · macOS</span>
             </div>
           </div>
 
@@ -148,7 +148,7 @@
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16v13H4zM7 4h10l2 3H5z" /></svg>
               </div>
               <h3>Collection folder tiles</h3>
-              <p>Open Playing, Backlog, Wishlist, Completed, Dropped, custom folders, and Franchises from a fast tile-based Collection home.</p>
+              <p>Open Playing, Backlog, Wishlist, Completed, Dropped, custom folders, and Franchises from a fast tile-based Collection home. My Library stays owned-only, so Wishlist never appears as a game you own.</p>
               <div class="status-pills" aria-hidden="true">
                 <span class="green">Playing</span><span class="blue">Backlog</span><span class="purple">Wishlist</span><span class="gold">Completed</span>
               </div>
@@ -183,7 +183,7 @@
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 15a7 7 0 1 1 4 4" /><circle cx="15" cy="9" r="2.5" /><path d="m13 11-4 3m0 0 3 3M9 14a2.5 2.5 0 1 1-2.5 2.5" /></svg>
               </div>
               <h3>Steam library and achievements</h3>
-              <p>Sign in on Steam's page to import owned games, track recent and lifetime playtime by platform, and see achievement completion, unlock dates, descriptions, and global rarity.</p>
+              <p>Sign in on Steam's page. GameVault Desktop reads the signed-in client's public library cache and sends an outbound snapshot of owned games, playtime, and friends—never passwords, cookies, or Steam login secrets. Phones retain the latest snapshot if the PC is off.</p>
               <div class="status-pills" aria-hidden="true"><span class="green">42 / 51</span><span class="blue">82.4%</span><span class="purple">Steam Deck</span></div>
             </article>
 
@@ -193,7 +193,7 @@
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14" /><circle cx="9" cy="6" r="2" /><circle cx="15" cy="12" r="2" /><circle cx="11" cy="18" r="2" /></svg>
               </div>
               <h3>Searchable tick-box filters</h3>
-              <p>Combine IGDB genres, themes, game modes, and keywords with age rating, Steam full or partial controller support, Steam popular tags, and native Linux or ProtonDB status. Search the 2,500+ available genre/style values without crowding game cards.</p>
+              <p>In Collection or Catalog, combine IGDB genres, themes, game modes, and keywords with age rating, Steam full or partial controller support, Steam popular tags, and native Linux or ProtonDB status. Search thousands of genre/style values without crowding game cards.</p>
               <div class="status-pills" aria-hidden="true"><span class="green">Co-op</span><span class="blue">Action</span><span class="purple">Horror</span><span class="gold">Proton</span></div>
             </article>
 
@@ -205,6 +205,24 @@
               <h3>Import, back up, and restore</h3>
               <p>Import the previous Gamery spreadsheet, then export a private full-library backup whenever you want. Ratings, progress, reviews, dates, platforms, and folders are retained.</p>
               <div class="import-chip"><span>CSV</span><strong>Ready to import</strong><i>✓</i></div>
+            </article>
+
+            <article class="feature-card reveal">
+              <span class="feature-number">08</span>
+              <div class="feature-icon">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM3 20v-2a5 5 0 0 1 10 0v2m1-5a4 4 0 0 1 7 3v2" /></svg>
+              </div>
+              <h3>Friends without a social-network clone</h3>
+              <p>Keep private friend notes and per-game status, or track cached Steam presence, current games, and recent changes. The design remains GameVault's own—not Steam's UI.</p>
+            </article>
+
+            <article class="feature-card reveal" data-delay="1">
+              <span class="feature-number">09</span>
+              <div class="feature-icon">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2M5 20l3-3m11 3-3-3" /></svg>
+              </div>
+              <h3>How long to beat and Up Next 3</h3>
+              <p>See IGDB's main-story, main-plus-extra, and completion estimates, then order as many as three owned games in an optional Up Next queue.</p>
             </article>
           </div>
 
@@ -268,7 +286,7 @@
           <div class="section-heading reveal">
             <p class="eyebrow"><span></span> Download and go</p>
             <h2>Pick your device. Your library starts locally.</h2>
-            <p>The fastest route is Android APK or the installable web app. iPhone uses an unsigned IPA because this is not an App Store release.</p>
+            <p>Choose a native phone or desktop build, or use the installable web app. Every build starts local-first; cloud sync is optional.</p>
           </div>
 
           <div class="install-tabs reveal" role="tablist" aria-label="Installation guides">
@@ -280,10 +298,17 @@
             <button type="button" id="tab-ios" role="tab" aria-selected="false" aria-controls="panel-ios" tabindex="-1" data-install-tab="ios">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 3c-.3 1.5-1.4 2.5-2.8 2.7M17.6 13.2c0-2 1.6-3 1.7-3.1a4.2 4.2 0 0 0-3.3-1.8c-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.7 2.8-.4 6.9 1.2 9.2.8 1.1 1.7 2.3 2.9 2.2 1.2 0 1.6-.7 3.1-.7s1.9.7 3.1.7c1.3 0 2.1-1.1 2.8-2.2.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.6-1-2.6-3.9Z" /></svg>
               iPhone
+              <span class="recommended">Recommended</span>
+            </button>
+            <button type="button" id="tab-desktop" role="tab" aria-selected="false" aria-controls="panel-desktop" tabindex="-1" data-install-tab="desktop">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8m-4-4v4" /></svg>
+              Desktop
+              <span class="recommended">Recommended</span>
             </button>
             <button type="button" id="tab-web" role="tab" aria-selected="false" aria-controls="panel-web" tabindex="-1" data-install-tab="web">
               <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.2 2.5 3.3 5.5 3.3 9S14.2 18.5 12 21c-2.2-2.5-3.3-5.5-3.3-9S9.8 5.5 12 3Z" /></svg>
               Web app
+              <span class="recommended">Recommended</span>
             </button>
           </div>
 
@@ -295,17 +320,17 @@
                 <ol class="steps">
                   <li><span>1</span><div><strong>Download the APK</strong><p>Tap the button and open the file from your browser's downloads.</p></div></li>
                   <li><span>2</span><div><strong>Allow this install</strong><p>If Android asks, allow “Install unknown apps” for the browser or Files app you used.</p></div></li>
-                  <li><span>3</span><div><strong>Open GameVault</strong><p>Your existing library stays in place. Search, filters, collection tiles, and compatibility metadata work in phone-only mode; Connect with Steam adds library activity when enabled.</p></div></li>
+                  <li><span>3</span><div><strong>Open GameVault</strong><p>Your existing library stays in place. Version 0.7.0 can check this page's signed update manifest and install later releases over the same app.</p></div></li>
                 </ol>
               </div>
               <div class="download-card">
                 <div class="download-icon android-icon">A</div>
                 <p class="eyebrow">ANDROID 8+</p>
                 <h3>GameVault APK</h3>
-                <p>Version 0.6.0 · signed release build · 1.3 MB</p>
+                <p>Version 0.7.0 · signed release build · 2.1 MB</p>
                 <a class="button button-primary button-full" href="downloads/GameVault-Android.apk" download>Download APK</a>
-                <div class="checksum"><span>SHA-256</span><code>9e68989d552f5947…</code><button type="button" data-copy="9e68989d552f59476634bb9ad2b4010b328b9f7073c4d958bc58b93dc685fc79" aria-label="Copy Android checksum">Copy</button></div>
-                <p class="card-note">Install future versions over this copy to keep your saved library. Settings also includes a full JSON backup and restore.</p>
+                <div class="checksum"><span>SHA-256</span><code>881dd47296d8e08f…</code><button type="button" data-copy="881dd47296d8e08ff465844f1137806541eaa7e8b78a15d042e8efb8c16a4c26" aria-label="Copy Android checksum">Copy</button></div>
+                <p class="card-note">Install the new APK over the existing copy—do not uninstall—and Android keeps the app data. Settings also includes full JSON backup and restore.</p>
               </div>
             </div>
 
@@ -315,19 +340,45 @@
                 <h3>Install on iPhone</h3>
                 <ol class="steps">
                   <li><span>1</span><div><strong>Set up a sideloading app</strong><p>Install SideStore or AltStore on your iPhone and complete its one-time pairing steps.</p></div></li>
-                  <li><span>2</span><div><strong>Download the IPA</strong><p>Open the GameVault IPA in your sideloading app and sign it with your Apple Account.</p></div></li>
+                  <li><span>2</span><div><strong>Add the update source or IPA</strong><p>Add the GameVault AltStore source for update notices, or open the IPA directly in your sideloading app.</p></div></li>
                   <li><span>3</span><div><strong>Refresh before expiry</strong><p>Free Apple signing normally requires a refresh every seven days. Refresh the same app; do not delete it.</p></div></li>
                 </ol>
-                <p class="guide-link">Need the full process? <a href="https://docs.sidestore.io/docs/installation/install" target="_blank" rel="noreferrer">Read SideStore's installation guide ↗</a></p>
+                <p class="guide-link"><a href="altstore-source.json">Open the GameVault AltStore source ↗</a> · <a href="https://docs.sidestore.io/docs/installation/install" target="_blank" rel="noreferrer">SideStore installation guide ↗</a></p>
               </div>
               <div class="download-card">
                 <div class="download-icon ios-icon"></div>
                 <p class="eyebrow">IPHONE · IOS 17+</p>
                 <h3>GameVault IPA</h3>
-                <p>Version 0.6.0 · unsigned native build · 1.2 MB</p>
+                <p>Version 0.7.0 · unsigned native build · 1.4 MB</p>
                 <a class="button button-primary button-full" href="downloads/GameVault-iOS-unsigned.ipa" download>Download IPA</a>
-                <div class="checksum"><span>SHA-256</span><code>b89e0564ac58be19…</code><button type="button" data-copy="b89e0564ac58be194979b0a96ff56c0227c4822f94e3f4a32ce38d973bb5d75c" aria-label="Copy iPhone checksum">Copy</button></div>
+                <div class="checksum"><span>SHA-256</span><code>6c33e91efeddabaf…</code><button type="button" data-copy="6c33e91efeddabaf636214684ab2443990a3662256bd2cc2933e52fd0cbf88d4" aria-label="Copy iPhone checksum">Copy</button></div>
                 <p class="card-note">This IPA is not App Store-signed. GameVault never receives your Apple Account password.</p>
+              </div>
+            </div>
+
+            <div class="install-panel" id="panel-desktop" role="tabpanel" aria-labelledby="tab-desktop" data-install-panel="desktop" hidden>
+              <div class="install-guide">
+                <p class="step-kicker">Native Windows · Linux · macOS</p>
+                <h3>Install on a computer</h3>
+                <ol class="steps">
+                  <li><span>1</span><div><strong>Choose your platform</strong><p>Windows has setup and portable builds, Linux uses an AppImage, and macOS has DMG and ZIP packages.</p></div></li>
+                  <li><span>2</span><div><strong>Open the package</strong><p>These independent builds are not code-signed, so Windows SmartScreen or macOS Gatekeeper may show an unrecognized-developer warning.</p></div></li>
+                  <li><span>3</span><div><strong>Keep it current</strong><p>Windows and Linux check for updates in the background and ask before restarting. The unsigned macOS build is updated manually.</p></div></li>
+                </ol>
+              </div>
+              <div class="download-card desktop-download-card">
+                <div class="download-icon desktop-icon">GV</div>
+                <p class="eyebrow">GAMEVAULT 0.7.0</p>
+                <h3>Desktop downloads</h3>
+                <div class="desktop-downloads">
+                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-windows-x64-setup.exe"><strong>Windows setup</strong><span>99.4 MB</span></a>
+                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-windows-x64-portable.exe"><strong>Windows portable</strong><span>99.1 MB</span></a>
+                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-linux-x86_64.AppImage"><strong>Linux AppImage</strong><span>98.7 MB</span></a>
+                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-mac-arm64.dmg"><strong>macOS Apple Silicon DMG</strong><span>109.7 MB</span></a>
+                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-mac-arm64.zip"><strong>macOS Apple Silicon ZIP</strong><span>120.3 MB</span></a>
+                </div>
+                <a class="text-link centered" href="downloads/SHA256SUMS.txt">View all SHA-256 checksums <span>→</span></a>
+                <p class="card-note">Updates preserve the desktop app's local data directory. Export a JSON backup before moving to another computer.</p>
               </div>
             </div>
 
@@ -398,7 +449,7 @@
           <div class="faq-list reveal" data-delay="1">
             <details open>
               <summary>Does it work without any online service?<span></span></summary>
-              <p>Yes. Android, iPhone, and the installed web app keep an on-device library without an account, token, PC, or personal server. Search and metadata need internet. Private cloud backup is optional. GameVault's service needs one server-side Steam key for library tracking, but individual phone users only sign in with Steam.</p>
+              <p>Yes. Android, iPhone, desktop, and the installed web app keep an on-device collection without an account, token, PC, or personal cloud. Search and fresh metadata need internet. A cached Steam snapshot remains usable when its relay PC or the service is offline.</p>
             </details>
             <details>
               <summary>Can I import my previous spreadsheet?<span></span></summary>
@@ -406,11 +457,15 @@
             </details>
             <details>
               <summary>How does Steam sign-in work?<span></span></summary>
-              <p>Tap Connect with Steam and sign in on Steam's own page. GameVault receives only your Steam ID—never your password or browser session. Its one server-side key then imports the owned games, platform playtime, last-played activity, and achievements allowed by your Steam Game Details privacy setting. Steam tags, controller support, and ProtonDB compatibility also load from each saved Steam listing.</p>
+              <p>Tap Connect with Steam and sign in on Steam's own page. GameVault receives a verified Steam ID and account-scoped session—never your password or browser session. On a computer where Steam is already signed in, GameVault Desktop reads Steam's public local library/friend cache and sends an outbound HTTPS snapshot. Phones import owned games, playtime, friends, and achievements from that snapshot and keep the last copy offline. Public Game Details visibility is needed only for Steam's public achievement/presence fallback.</p>
             </details>
             <details>
               <summary>Will an APK update erase my library?<span></span></summary>
               <p>No. Install the newer signed APK over the existing app and Android retains its data. Do not uninstall first. For an extra copy or a new phone, use Settings → Export full backup, then restore that JSON file.</p>
+            </details>
+            <details>
+              <summary>Why is Wishlist not in My Library?<span></span></summary>
+              <p>My Library is deliberately reserved for owned games. Wishlist is the same concept as Want to Play and remains available as its own Collection tile and status.</p>
             </details>
             <details>
               <summary>Are trailers linked for every game?<span></span></summary>
@@ -454,7 +509,7 @@
           <p>A private, local-first home for your game collection.</p>
         </div>
         <div class="footer-links">
-          <div><strong>Get it</strong><a href="downloads/GameVault-Android.apk" download>Android APK</a><a href="downloads/GameVault-iOS-unsigned.ipa" download>iPhone IPA</a><a href="https://gamevault-dp0.pages.dev" target="_blank" rel="noreferrer">Web app</a></div>
+          <div><strong>Get it</strong><a href="downloads/GameVault-Android.apk" download>Android APK</a><a href="downloads/GameVault-iOS-unsigned.ipa" download>iPhone IPA</a><a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-windows-x64-setup.exe">Windows</a><a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-linux-x86_64.AppImage">Linux</a><a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.0/GameVault-0.7.0-mac-arm64.dmg">macOS</a><a href="https://gamevault-dp0.pages.dev" target="_blank" rel="noreferrer">Web app</a></div>
           <div><strong>Help</strong><a href="#install">Install guide</a><a href="CLOUD_SETUP.html">Cloud setup</a><a href="PRIVACY.html">Privacy</a></div>
           <div><strong>Project</strong><a href="https://github.com/ahmedalqamzi/GameVault-Downloads" target="_blank" rel="noreferrer">GitHub</a><a href="#screenshots">Screenshots</a><a href="#faq">FAQ</a></div>
         </div>

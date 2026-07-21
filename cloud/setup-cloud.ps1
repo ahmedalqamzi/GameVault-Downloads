@@ -27,6 +27,10 @@ $bytes = New-Object byte[] 32
 $syncToken = [Convert]::ToHexString($bytes).ToLowerInvariant()
 Set-Content -Path ".gamevault-sync-token" -Value $syncToken -NoNewline
 $syncToken | npx wrangler secret put SYNC_TOKEN -c workers/api/wrangler.jsonc
+$sessionBytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Fill($sessionBytes)
+$steamSessionSecret = [Convert]::ToHexString($sessionBytes).ToLowerInvariant()
+$steamSessionSecret | npx wrangler secret put STEAM_SESSION_SECRET -c workers/api/wrangler.jsonc
 
 $addIgdb = Read-Host "Add IGDB artwork, search, release dates, and trailers now? [y/N]"
 if ($addIgdb -match '^[Yy]$') {
@@ -36,9 +40,9 @@ if ($addIgdb -match '^[Yy]$') {
   npx wrangler secret put IGDB_CLIENT_SECRET -c workers/api/wrangler.jsonc
 }
 
-$addSteam = Read-Host "Add Steam library, playtime, and achievement import now? [y/N]"
+$addSteam = Read-Host "Add an optional Steam Web API fallback for public profiles? [y/N]"
 if ($addSteam -match '^[Yy]$') {
-  Write-Host "Wrangler will securely prompt for your Steam Web API key."
+  Write-Host "Wrangler will securely prompt for your optional Steam Web API key. The desktop relay does not need it."
   npx wrangler secret put STEAM_API_KEY -c workers/api/wrangler.jsonc
 }
 
