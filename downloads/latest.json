@@ -1,13 +1,15 @@
 {
-  "version": "0.7.0",
-  "releasedAt": "2026-07-21T17:10:00Z",
-  "androidVersionCode": 9,
+  "version": "0.7.1",
+  "releasedAt": "2026-07-21T20:33:32Z",
+  "androidVersionCode": 10,
   "minimumAndroidSdk": 26,
   "androidUrl": "https://ahmedalqamzi.github.io/GameVault-Downloads/downloads/GameVault-Android.apk",
-  "androidSha256": "881dd47296d8e08ff465844f1137806541eaa7e8b78a15d042e8efb8c16a4c26",
+  "androidSha256": "8c10d5ff0edd5ae8fd542ea83eef7fafe988dc01bdb0ea63e8653730c37860a6",
   "notes": [
+    "Twenty-four selectable themes: six original palettes and eighteen game-inspired styles",
+    "Standalone Steam library and playtime sync through the GameVault server",
     "Owned-only My Library with tile-based Collection folders and Franchises",
-    "Steam desktop relay for owned games, playtime, achievements, and friends",
+    "Steam achievements and friend tracking with clear profile-privacy guidance",
     "Checkbox filters in Collection and Catalog, including controller and Proton metadata",
     "How long to beat, Up Next 3, friend tracking, trailer fixes, and mobile performance work"
   ]
