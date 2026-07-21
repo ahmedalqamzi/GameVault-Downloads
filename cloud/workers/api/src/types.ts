@@ -4,6 +4,7 @@ export interface Env {
   STEAM_RATE_LIMITER?: RateLimit;
   STEAM_METADATA_RATE_LIMITER?: RateLimit;
   STEAM_ACHIEVEMENT_RATE_LIMITER?: RateLimit;
+  SOCIAL_RATE_LIMITER?: RateLimit;
   SYNC_TOKEN?: string;
   IGDB_CLIENT_ID?: string;
   IGDB_CLIENT_SECRET?: string;

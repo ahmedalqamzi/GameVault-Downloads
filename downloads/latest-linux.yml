@@ -1,9 +1,9 @@
-version: 0.7.1
+version: 0.8.0
 files:
-  - url: GameVault-0.7.1-linux-x86_64.AppImage
-    sha512: AemN2IoK4ybKVXfoir2mT0iILyibKTmW2Y9DNTfzBNr5ZZ++5fu+/95pE5fi9XO0ifYu5xR3XMtyMfcLZoI19A==
-    size: 98730234
-    blockMapSize: 102670
-path: GameVault-0.7.1-linux-x86_64.AppImage
-sha512: AemN2IoK4ybKVXfoir2mT0iILyibKTmW2Y9DNTfzBNr5ZZ++5fu+/95pE5fi9XO0ifYu5xR3XMtyMfcLZoI19A==
-releaseDate: '2026-07-21T20:36:35.235Z'
+  - url: GameVault-0.8.0-linux-x86_64.AppImage
+    sha512: ITeo5NPdFtEyppS+SZsZHIZZav7G64Lw55ui38BN25pHV5M7QidwQGT0F84UGMfXz4ILWmRfbirz/MdSrU9Xcg==
+    size: 98734348
+    blockMapSize: 102688
+path: GameVault-0.8.0-linux-x86_64.AppImage
+sha512: ITeo5NPdFtEyppS+SZsZHIZZav7G64Lw55ui38BN25pHV5M7QidwQGT0F84UGMfXz4ILWmRfbirz/MdSrU9Xcg==
+releaseDate: '2026-07-21T21:33:10.390Z'

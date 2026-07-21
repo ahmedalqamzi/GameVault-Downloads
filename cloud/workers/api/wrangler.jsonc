@@ -50,6 +50,14 @@
         "limit": 30,
         "period": 60
       }
+    },
+    {
+      "name": "SOCIAL_RATE_LIMITER",
+      "namespace_id": "1005",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
     }
   ],
   "triggers": {

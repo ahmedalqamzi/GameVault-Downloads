@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#11110f" />
     <meta
       name="description"
-      content="Download GameVault 0.7.1 for Android, or install the themed local-first game library on iPhone, Windows, Linux, macOS, and the web."
+      content="Download GameVault 0.8.0 for Android, or install the themed local-first game library on iPhone, Windows, Linux, macOS, and the web."
     />
     <meta property="og:title" content="GameVault — Your games, in one place" />
     <meta
@@ -64,7 +64,7 @@
             <p class="eyebrow"><span></span> Local first. Cloud when you want it.</p>
             <h1>Your whole game life, <em>finally in view.</em></h1>
             <p class="hero-lede">
-              Keep owned games, a separate Wishlist, collection folders, friends, Steam progress, time-to-beat estimates, franchise timelines, trailers, and play history together. Version 0.7.1 adds 24 selectable themes and standalone Steam library and playtime sync.
+              Keep owned games, a separate Wishlist, collection folders, friends, Steam progress, time-to-beat estimates, franchise timelines, trailers, and play history together. Version 0.8.0 adds an endless game feed, monthly Top 10 anticipated lists, cross-app Friend Wishlists, and emblem-rich themes.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="downloads/GameVault-Android.apk" download data-smart-download>
@@ -159,8 +159,8 @@
               <div class="feature-icon">
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 18V7l8-4 8 4v11l-8 3-8-3Z" /><path d="m4 7 8 4 8-4m-8 4v10" /></svg>
               </div>
-              <h3>Franchise tile and timelines</h3>
-              <p>Open Franchises as a Collection tile, follow only the series you care about, and spot obtainable games missing from your library.</p>
+              <h3>Collapsible franchises and timelines</h3>
+              <p>Expand Franchises only when you need it, follow the series you care about, and spot obtainable games missing from your library.</p>
               <div class="franchise-row" aria-hidden="true"><i></i><span>The Legend of Zelda</span><b>Following</b></div>
             </article>
 
@@ -182,8 +182,8 @@
               <div class="feature-icon">
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 15a7 7 0 1 1 4 4" /><circle cx="15" cy="9" r="2.5" /><path d="m13 11-4 3m0 0 3 3M9 14a2.5 2.5 0 1 1-2.5 2.5" /></svg>
               </div>
-              <h3>Steam library and achievements</h3>
-              <p>Sign in on Steam's page. GameVault Desktop reads the signed-in client's public library cache and sends an outbound snapshot of owned games, playtime, and friends—never passwords, cookies, or Steam login secrets. Phones retain the latest snapshot if the PC is off.</p>
+              <h3>Standalone Steam library and achievements</h3>
+              <p>Sign in on Steam's page from your phone. The GameVault service uses the verified Steam ID to request visibility-permitted owned games, playtime, friends, and achievement data—never your password, Steam Guard code, cookies, or browser session. Desktop relay remains an optional fallback.</p>
               <div class="status-pills" aria-hidden="true"><span class="green">42 / 51</span><span class="blue">82.4%</span><span class="purple">Steam Deck</span></div>
             </article>
 
@@ -212,8 +212,8 @@
               <div class="feature-icon">
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8 1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM3 20v-2a5 5 0 0 1 10 0v2m1-5a4 4 0 0 1 7 3v2" /></svg>
               </div>
-              <h3>Friends without a social-network clone</h3>
-              <p>Keep private friend notes and per-game status, or track cached Steam presence, current games, and recent changes. The design remains GameVault's own—not Steam's UI.</p>
+              <h3>Friends and cross-app Wishlists</h3>
+              <p>Keep private friend notes and presence history, then optionally publish your Wishlist only to verified Steam friends using GameVault. Friend Wishlists follow the same account across Android, iPhone, web, and desktop.</p>
             </article>
 
             <article class="feature-card reveal" data-delay="1">
@@ -223,6 +223,25 @@
               </div>
               <h3>How long to beat and Up Next 3</h3>
               <p>See IGDB's main-story, main-plus-extra, and completion estimates, then order as many as three owned games in an optional Up Next queue.</p>
+            </article>
+
+            <article class="feature-card reveal" data-delay="2">
+              <span class="feature-number">10</span>
+              <div class="feature-icon">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" /><path d="m17 16 3 3 3-3" /></svg>
+              </div>
+              <h3>Endless discovery feed</h3>
+              <p>Scroll through live game data for as long as you want, save a game straight to Wishlist, and browse each month's Top 10 most anticipated releases.</p>
+            </article>
+
+            <article class="feature-card reveal">
+              <span class="feature-number">11</span>
+              <div class="feature-icon">
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 4 8v8l8 5 8-5V8l-8-5Z" /><path d="m8 13 2.5 2.5L16 10" /></svg>
+              </div>
+              <h3>Themes with their own personality</h3>
+              <p>Collapse the theme picker when you are done. Every theme changes its emblem, surfaces, corner style, shadows, pattern, colors, and typography—not only the font and palette.</p>
+              <p class="fine-print">Inspired themes use original fan-made homage artwork and are not official franchise themes.</p>
             </article>
           </div>
 
@@ -320,16 +339,16 @@
                 <ol class="steps">
                   <li><span>1</span><div><strong>Download the APK</strong><p>Tap the button and open the file from your browser's downloads.</p></div></li>
                   <li><span>2</span><div><strong>Allow this install</strong><p>If Android asks, allow “Install unknown apps” for the browser or Files app you used.</p></div></li>
-                  <li><span>3</span><div><strong>Open GameVault</strong><p>Your existing library stays in place. Version 0.7.1 checks this page's signed update manifest and can install later releases over the same app.</p></div></li>
+                  <li><span>3</span><div><strong>Open GameVault</strong><p>Your existing library stays in place. Version 0.8.0 checks this page's signed update manifest and can install later releases over the same app.</p></div></li>
                 </ol>
               </div>
               <div class="download-card">
                 <div class="download-icon android-icon">A</div>
                 <p class="eyebrow">ANDROID 8+</p>
                 <h3>GameVault APK</h3>
-                <p>Version 0.7.1 · signed release build · 2.1 MB</p>
+                <p>Version 0.8.0 · signed release build · 2.1 MB</p>
                 <a class="button button-primary button-full" href="downloads/GameVault-Android.apk" download>Download APK</a>
-                <div class="checksum"><span>SHA-256</span><code>8c10d5ff0edd5ae8…</code><button type="button" data-copy="8c10d5ff0edd5ae8fd542ea83eef7fafe988dc01bdb0ea63e8653730c37860a6" aria-label="Copy Android checksum">Copy</button></div>
+                <div class="checksum"><span>SHA-256</span><code>30064c5b1a9dbad5…</code><button type="button" data-copy="30064c5b1a9dbad5ddfadb6a04a867779ef81cc7c7a33992de377f0da508a050" aria-label="Copy Android checksum">Copy</button></div>
                 <p class="card-note">Install the new APK over the existing copy—do not uninstall—and Android keeps the app data. Settings also includes full JSON backup and restore.</p>
               </div>
             </div>
@@ -349,9 +368,9 @@
                 <div class="download-icon ios-icon"></div>
                 <p class="eyebrow">IPHONE · IOS 17+</p>
                 <h3>GameVault IPA</h3>
-                <p>Version 0.7.1 · unsigned native build · 1.4 MB</p>
+                <p>Version 0.8.0 · unsigned native build · 1.5 MB</p>
                 <a class="button button-primary button-full" href="downloads/GameVault-iOS-unsigned.ipa" download>Download IPA</a>
-                <div class="checksum"><span>SHA-256</span><code>6d20c48e85df0f0…</code><button type="button" data-copy="6d20c48e85df0f0c7f3250ed724c4e80e09fd8e5e11064d5e47e6698c9aaf965" aria-label="Copy iPhone checksum">Copy</button></div>
+                <div class="checksum"><span>SHA-256</span><code>f20e54119ee413b8…</code><button type="button" data-copy="f20e54119ee413b8754cce8109c8ca7528a01326ffaf192582722c1e2f39e675" aria-label="Copy iPhone checksum">Copy</button></div>
                 <p class="card-note">This IPA is not App Store-signed. GameVault never receives your Apple Account password.</p>
               </div>
             </div>
@@ -368,14 +387,14 @@
               </div>
               <div class="download-card desktop-download-card">
                 <div class="download-icon desktop-icon">GV</div>
-                <p class="eyebrow">GAMEVAULT 0.7.1</p>
+                <p class="eyebrow">GAMEVAULT 0.8.0</p>
                 <h3>Desktop downloads</h3>
                 <div class="desktop-downloads">
-                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.1/GameVault-0.7.1-windows-x64-setup.exe"><strong>Windows setup</strong><span>99.4 MB</span></a>
-                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.1/GameVault-0.7.1-windows-x64-portable.exe"><strong>Windows portable</strong><span>99.1 MB</span></a>
-                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.1/GameVault-0.7.1-linux-x86_64.AppImage"><strong>Linux AppImage</strong><span>98.7 MB</span></a>
-                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.1/GameVault-0.7.1-mac-arm64.dmg"><strong>macOS Apple Silicon DMG</strong><span>109.7 MB</span></a>
-                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.1/GameVault-0.7.1-mac-arm64.zip"><strong>macOS Apple Silicon ZIP</strong><span>120.3 MB</span></a>
+                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.0/GameVault-0.8.0-windows-x64-setup.exe"><strong>Windows setup</strong><span>99.4 MB</span></a>
+                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.0/GameVault-0.8.0-windows-x64-portable.exe"><strong>Windows portable</strong><span>99.1 MB</span></a>
+                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.0/GameVault-0.8.0-linux-x86_64.AppImage"><strong>Linux AppImage</strong><span>98.7 MB</span></a>
+                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.0/GameVault-0.8.0-mac-arm64.dmg"><strong>macOS Apple Silicon DMG</strong><span>109.6 MB</span></a>
+                  <a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.0/GameVault-0.8.0-mac-arm64.zip"><strong>macOS Apple Silicon ZIP</strong><span>120.3 MB</span></a>
                 </div>
                 <a class="text-link centered" href="downloads/SHA256SUMS.txt">View all SHA-256 checksums <span>→</span></a>
                 <p class="card-note">Updates preserve the desktop app's local data directory. Export a JSON backup before moving to another computer.</p>
@@ -449,7 +468,7 @@
           <div class="faq-list reveal" data-delay="1">
             <details open>
               <summary>Does it work without any online service?<span></span></summary>
-              <p>Yes. Android, iPhone, desktop, and the installed web app keep an on-device collection without an account, token, PC, or personal cloud. Search and fresh metadata need internet. A cached Steam snapshot remains usable when its relay PC or the service is offline.</p>
+              <p>Yes. Android, iPhone, desktop, and the installed web app keep an on-device collection without an account, token, PC, or personal cloud. Search, the discovery feed, Friend Wishlists, and fresh metadata need internet. Previously saved games and the latest Steam import remain usable if the service is offline.</p>
             </details>
             <details>
               <summary>Can I import my previous spreadsheet?<span></span></summary>
@@ -457,7 +476,7 @@
             </details>
             <details>
               <summary>How does Steam sign-in work?<span></span></summary>
-              <p>Tap Connect with Steam and sign in on Steam's own page. GameVault receives a verified Steam ID and account-scoped session—never your password or browser session. On a computer where Steam is already signed in, GameVault Desktop reads Steam's public local library/friend cache and sends an outbound HTTPS snapshot. Phones import owned games, playtime, friends, and achievements from that snapshot and keep the last copy offline. Public Game Details visibility is needed only for Steam's public achievement/presence fallback.</p>
+              <p>Tap Connect with Steam and sign in on Steam's own page. GameVault receives a verified Steam ID and account-scoped session—never your password, Steam Guard code, or browser session. Its hosted service can import visibility-permitted owned games, playtime, friends, and achievements directly for a standalone phone. A signed-in desktop can also provide an outbound local-cache snapshot as an optional fallback.</p>
             </details>
             <details>
               <summary>Will an APK update erase my library?<span></span></summary>
@@ -477,7 +496,7 @@
             </details>
             <details>
               <summary>Will cloud sync combine my friends' libraries?<span></span></summary>
-              <p>No. The cloud setup is deliberately single-owner. Each person should deploy their own database and keep their token private.</p>
+              <p>No. Personal cloud sync remains single-owner. Friend Wishlists are a separate opt-in hosted feature: GameVault publishes only the Wishlist snapshot you choose to share and returns it only to Steam accounts it can verify as your friends.</p>
             </details>
             <details>
               <summary>Why does iPhone need SideStore or AltStore?<span></span></summary>
@@ -509,7 +528,7 @@
           <p>A private, local-first home for your game collection.</p>
         </div>
         <div class="footer-links">
-          <div><strong>Get it</strong><a href="downloads/GameVault-Android.apk" download>Android APK</a><a href="downloads/GameVault-iOS-unsigned.ipa" download>iPhone IPA</a><a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.1/GameVault-0.7.1-windows-x64-setup.exe">Windows</a><a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.1/GameVault-0.7.1-linux-x86_64.AppImage">Linux</a><a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.7.1/GameVault-0.7.1-mac-arm64.dmg">macOS</a><a href="https://gamevault-dp0.pages.dev" target="_blank" rel="noreferrer">Web app</a></div>
+          <div><strong>Get it</strong><a href="downloads/GameVault-Android.apk" download>Android APK</a><a href="downloads/GameVault-iOS-unsigned.ipa" download>iPhone IPA</a><a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.0/GameVault-0.8.0-windows-x64-setup.exe">Windows</a><a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.0/GameVault-0.8.0-linux-x86_64.AppImage">Linux</a><a href="https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.0/GameVault-0.8.0-mac-arm64.dmg">macOS</a><a href="https://gamevault-dp0.pages.dev" target="_blank" rel="noreferrer">Web app</a></div>
           <div><strong>Help</strong><a href="#install">Install guide</a><a href="CLOUD_SETUP.html">Cloud setup</a><a href="PRIVACY.html">Privacy</a></div>
           <div><strong>Project</strong><a href="https://github.com/ahmedalqamzi/GameVault-Downloads" target="_blank" rel="noreferrer">GitHub</a><a href="#screenshots">Screenshots</a><a href="#faq">FAQ</a></div>
         </div>

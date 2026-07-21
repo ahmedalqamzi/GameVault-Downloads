@@ -487,6 +487,42 @@ export async function discoverGames(
   return withTimeToBeat(env, rows.map(normalizeIGDBGame));
 }
 
+export async function feedGames(
+  env: Env,
+  cursor: number | undefined,
+  requestedLimit: number,
+): Promise<{ games: Game[]; nextCursor?: string; hasMore: boolean }> {
+  const limit = Math.max(6, Math.min(requestedLimit, 36));
+  const cursorClause = cursor ? ` & id < ${cursor}` : "";
+  const rows = await queryIGDB(
+    env,
+    `fields ${GAME_FIELDS}; where version_parent = null & cover != null${cursorClause}; sort id desc; limit ${limit + 1};`,
+  );
+  const hasMore = rows.length > limit;
+  const games = await withTimeToBeat(env, rows.slice(0, limit).map(normalizeIGDBGame));
+  const lastID = games.at(-1)?.id;
+  return {
+    games,
+    ...(hasMore && lastID ? { nextCursor: String(lastID) } : {}),
+    hasMore: hasMore && Boolean(lastID),
+  };
+}
+
+export async function anticipatedGames(
+  env: Env,
+  start: number,
+  end: number,
+): Promise<Game[]> {
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start <= 0 || end <= start) {
+    return [];
+  }
+  const rows = await queryIGDB(
+    env,
+    `fields ${GAME_FIELDS}; where version_parent = null & cover != null & first_release_date >= ${start} & first_release_date < ${end}; sort hypes desc; limit 10;`,
+  );
+  return withTimeToBeat(env, rows.map(normalizeIGDBGame));
+}
+
 export async function calendarGames(
   env: Env,
   start: number,

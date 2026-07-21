@@ -1,8 +1,10 @@
 import type {
+  AnticipatedMonthResponse,
   ClientChange,
   CollectionFolder,
   FriendProfile,
   FriendTrackerResponse,
+  GameFeedResponse,
   LibraryResponse,
   PreferencesResponse,
   PushResponse,
@@ -12,6 +14,7 @@ import type {
   SteamAuthExchangeResponse,
   SteamRelaySnapshot,
   SteamRelayStatus,
+  SocialWishlistUpdate,
   UserPreferences,
 } from "@gamevault/shared";
 import {
@@ -29,8 +32,10 @@ import {
 } from "./db";
 import { apiError, corsHeaders, isAuthorized, json, parseJson } from "./http";
 import {
+  anticipatedGames,
   calendarGames,
   discoverGames,
+  feedGames,
   gamesByIds,
   gamesInFranchise,
   searchGames,
@@ -54,7 +59,14 @@ import {
   refreshSteamFriends,
   relaySteamLibrary,
   saveRelaySnapshot,
+  steamCommunityFriends,
 } from "./steam-relay";
+import {
+  deleteSocialProfile,
+  getSocialFriends,
+  getSocialProfile,
+  saveSocialWishlist,
+} from "./social";
 import type { Env } from "./types";
 
 interface PushRequest {
@@ -84,6 +96,11 @@ interface SteamAchievementsRequest extends SteamAppsRequest {
 
 interface SteamAuthExchangeRequest {
   code?: unknown;
+}
+
+interface SocialWishlistRequest {
+  shareWishlist?: unknown;
+  games?: unknown;
 }
 
 async function canAccessSteamAccount(
@@ -195,6 +212,13 @@ export function parseGameIds(value: string | null): number[] | undefined {
   return ids.length > 0 ? ids : undefined;
 }
 
+export function parseFeedCursor(value: string | null): number | undefined {
+  if (value === null || value === "") return undefined;
+  if (!/^\d+$/.test(value)) return undefined;
+  const cursor = Number(value);
+  return Number.isSafeInteger(cursor) && cursor > 0 ? cursor : undefined;
+}
+
 function metadataClientKey(request: Request): string {
   const installation = request.headers.get("x-gamevault-client")?.trim() ?? "";
   const validInstallation = /^[a-zA-Z0-9._:-]{8,100}$/.test(installation)
@@ -217,6 +241,8 @@ async function routePublicMetadata(
   const supported = request.method === "GET" && new Set([
     "/v1/games/search",
     "/v1/games/discover",
+    "/v1/games/feed",
+    "/v1/games/anticipated",
     "/v1/games/calendar",
     "/v1/games/franchise",
     "/v1/games/metadata",
@@ -250,6 +276,36 @@ async function routePublicMetadata(
     const games = await discoverGames(env, kind);
     await cacheGames(env.DB, games);
     return json(request, env, { games } satisfies SearchResponse, {
+      headers: { "cache-control": "public, max-age=900" },
+    });
+  }
+
+  if (path === "/v1/games/feed") {
+    const rawCursor = url.searchParams.get("cursor");
+    const cursor = parseFeedCursor(rawCursor);
+    if (rawCursor && cursor === undefined) {
+      return apiError(request, env, 400, "invalid_cursor", "The feed cursor is invalid.");
+    }
+    const rawLimit = url.searchParams.get("limit") ?? "24";
+    if (!/^\d+$/.test(rawLimit)) {
+      return apiError(request, env, 400, "invalid_limit", "Feed limit must be a number.");
+    }
+    const result = await feedGames(env, cursor, Number(rawLimit));
+    await cacheGames(env.DB, result.games);
+    return json(request, env, result satisfies GameFeedResponse, {
+      headers: { "cache-control": "public, max-age=900" },
+    });
+  }
+
+  if (path === "/v1/games/anticipated") {
+    const month = url.searchParams.get("month") ?? "";
+    const range = monthRange(month);
+    if (!range) {
+      return apiError(request, env, 400, "invalid_month", "Month must use YYYY-MM format.");
+    }
+    const games = await anticipatedGames(env, range.start, range.end);
+    await cacheGames(env.DB, games);
+    return json(request, env, { month, games } satisfies AnticipatedMonthResponse, {
       headers: { "cache-control": "public, max-age=900" },
     });
   }
@@ -289,6 +345,81 @@ async function routePublicMetadata(
   return json(request, env, { games } satisfies SearchResponse, {
     headers: { "cache-control": "public, max-age=3600" },
   });
+}
+
+async function routeSocial(
+  request: Request,
+  env: Env,
+  path: string,
+): Promise<Response | undefined> {
+  if (path !== "/v1/social/profile" && path !== "/v1/social/friends") return undefined;
+  const steamId = await steamSessionIdentity(request, env);
+  if (!steamId) {
+    return apiError(request, env, 401, "steam_sign_in_required", "Sign in with Steam to connect GameVault friends.");
+  }
+  if (env.SOCIAL_RATE_LIMITER) {
+    const outcome = await env.SOCIAL_RATE_LIMITER.limit({ key: steamId });
+    if (!outcome.success) {
+      return apiError(request, env, 429, "rate_limited", "Too many friend requests. Try again in a minute.");
+    }
+  }
+
+  if (path === "/v1/social/friends" && request.method === "GET") {
+    try {
+      return json(request, env, await getSocialFriends(env, steamId), {
+        headers: { "cache-control": "no-store" },
+      });
+    } catch (error) {
+      return apiError(
+        request,
+        env,
+        409,
+        "steam_friends_unavailable",
+        error instanceof Error ? error.message : "Steam could not verify this friend list.",
+      );
+    }
+  }
+
+  if (path === "/v1/social/profile" && request.method === "GET") {
+    const profile = await getSocialProfile(env, steamId);
+    return profile
+      ? json(request, env, profile, { headers: { "cache-control": "no-store" } })
+      : apiError(request, env, 404, "social_profile_missing", "Connect friend wishlists on this device first.");
+  }
+
+  if (path === "/v1/social/profile" && request.method === "PUT") {
+    const contentLength = Number.parseInt(request.headers.get("content-length") ?? "0", 10);
+    if (Number.isFinite(contentLength) && contentLength > 2_000_000) {
+      return apiError(request, env, 413, "request_too_large", "The shared wishlist is too large.");
+    }
+    const body = await parseJson<SocialWishlistRequest>(request);
+    if (
+      !body
+      || typeof body.shareWishlist !== "boolean"
+      || !Array.isArray(body.games)
+      || body.games.length > 500
+      || !body.games.every(isValidGame)
+    ) {
+      return apiError(request, env, 422, "invalid_wishlist", "Share at most 500 valid Wishlist games.");
+    }
+    const update: SocialWishlistUpdate = {
+      shareWishlist: body.shareWishlist,
+      games: body.games,
+    };
+    return json(request, env, await saveSocialWishlist(
+      env,
+      steamId,
+      update.shareWishlist,
+      update.games,
+    ), { headers: { "cache-control": "no-store" } });
+  }
+
+  if (path === "/v1/social/profile" && request.method === "DELETE") {
+    await deleteSocialProfile(env, steamId);
+    return json(request, env, { deleted: true }, { headers: { "cache-control": "no-store" } });
+  }
+
+  return apiError(request, env, 405, "method_not_allowed", "That friend action is not supported.");
 }
 
 async function routePublicSteam(
@@ -388,7 +519,28 @@ async function routePublicSteam(
       return apiError(request, env, 401, "unauthorized", "Sign in to Steam to view the friend tracker.");
     }
     if (request.method === "POST") await refreshSteamFriends(env.DB, steamId);
-    return json(request, env, await getFriendTracker(env.DB, steamId) satisfies FriendTrackerResponse, {
+    const tracker = await getFriendTracker(env.DB, steamId);
+    if (request.method === "POST" || tracker.friends.length === 0) {
+      try {
+        const friends = await steamCommunityFriends(steamId);
+        return json(request, env, {
+          ...tracker,
+          friends,
+          syncedAt: new Date().toISOString(),
+        } satisfies FriendTrackerResponse, { headers: { "cache-control": "no-store" } });
+      } catch (error) {
+        if (tracker.friends.length === 0) {
+          return apiError(
+            request,
+            env,
+            409,
+            "steam_friends_private",
+            error instanceof Error ? error.message : "Steam could not share this friend list.",
+          );
+        }
+      }
+    }
+    return json(request, env, tracker satisfies FriendTrackerResponse, {
       headers: { "cache-control": "no-store" },
     });
   }
@@ -455,16 +607,23 @@ async function routePublicSteam(
       return apiError(request, env, 401, "unauthorized", "Sign in to the matching Steam account before importing its local library.");
     }
     const relayResult = accountAuthorized ? await relaySteamLibrary(env, requestedSteamID) : undefined;
-    const result = relayResult ?? (env.STEAM_API_KEY
-      ? await steamLibrary(env, requestedSteamID)
-      : undefined);
+    let directResult: Awaited<ReturnType<typeof steamLibrary>> | undefined;
+    let directError: unknown;
+    try {
+      directResult = await steamLibrary(env, requestedSteamID);
+    } catch (error) {
+      directError = error;
+    }
+    const result = directResult ?? relayResult;
     if (!result) {
       return apiError(
         request,
         env,
         409,
-        "steam_relay_pending",
-        "No local Steam library snapshot is available yet. Open GameVault Desktop on a computer where Steam is signed in, then sync again.",
+        "steam_library_private",
+        directError instanceof Error
+          ? directError.message
+          : "Steam could not share this library. Make Profile and Game details Public, then sync again.",
       );
     }
     await cacheGames(env.DB, result.games.map((item) => item.game));
@@ -519,6 +678,9 @@ async function route(request: Request, env: Env): Promise<Response> {
   // desktop client; a configured Web API key is only a public-profile fallback.
   const steamResponse = await routePublicSteam(request, env, path, url);
   if (steamResponse) return steamResponse;
+
+  const socialResponse = await routeSocial(request, env, path);
+  if (socialResponse) return socialResponse;
 
   if (!env.SYNC_TOKEN) {
     return apiError(request, env, 503, "not_configured", "The sync token is not configured.");

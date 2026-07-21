@@ -350,6 +350,96 @@ export function parseSteamProfileXML(xml: string, trackedAt = new Date().toISOSt
   };
 }
 
+function decodeSteamHTML(value: string): string {
+  return decodeXML(value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&#(\d+);/g, (entity, decimal: string) => {
+      const codePoint = Number(decimal);
+      return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : entity;
+    })
+    .replace(/&#x([a-f0-9]+);/gi, (entity, hexadecimal: string) => {
+      const codePoint = Number.parseInt(hexadecimal, 16);
+      return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : entity;
+    }))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function parseSteamFriendsHTML(
+  html: string,
+  ownerSteamID: string,
+  trackedAt = new Date().toISOString(),
+): SteamFriendPresence[] {
+  if (!validSteamID(ownerSteamID)) return [];
+  const starts = [...html.matchAll(/<div\b[^>]*\bdata-steamid=["'](\d{17})["'][^>]*>/gi)];
+  const seen = new Set<string>();
+  const friends: SteamFriendPresence[] = [];
+  for (let index = 0; index < starts.length && friends.length < MAX_RELAY_FRIENDS; index += 1) {
+    const match = starts[index]!;
+    const steamId = match[1];
+    if (!validSteamID(steamId) || steamId === ownerSteamID || seen.has(steamId)) continue;
+    const opening = match[0];
+    const classes = /\bclass=["']([^"']*)["']/i.exec(opening)?.[1] ?? "";
+    if (!/(?:^|\s)friend_block_v2(?:\s|$)/i.test(classes)) continue;
+    const end = starts[index + 1]?.index ?? html.length;
+    const block = html.slice(match.index, end);
+    const personaName = decodeSteamHTML(
+      /<div\b[^>]*\bclass=["'][^"']*\bfriend_block_content\b[^"']*["'][^>]*>([\s\S]*?)<br\b/i.exec(block)?.[1] ?? "",
+    );
+    if (!personaName || personaName.length > 100) continue;
+    const gameName = decodeSteamHTML(
+      /<span\b[^>]*\bclass=["'][^"']*\bfriend_game_link\b[^"']*["'][^>]*>([\s\S]*?)<\/span>/i.exec(block)?.[1] ?? "",
+    );
+    const profileURL = decodeSteamHTML(
+      /<a\b[^>]*\bclass=["'][^"']*\bselectable_overlay\b[^"']*["'][^>]*\bhref=["']([^"']+)["']/i.exec(block)?.[1] ?? "",
+    );
+    const avatarURL = decodeSteamHTML(/<img\b[^>]*\bsrc=["']([^"']+)["']/i.exec(block)?.[1] ?? "");
+    const normalizedClasses = classes.toLowerCase();
+    const presence: FriendPresenceState = gameName || normalizedClasses.includes("in-game")
+      ? "in_game"
+      : normalizedClasses.includes("online")
+        ? "online"
+        : "offline";
+    seen.add(steamId);
+    friends.push({
+      steamId,
+      personaName,
+      profileUrl: /^https:\/\/steamcommunity\.com\/(?:profiles|id)\//i.test(profileURL)
+        ? profileURL
+        : `https://steamcommunity.com/profiles/${steamId}`,
+      ...(avatarURL.startsWith("https://") ? { avatarUrl: avatarURL } : {}),
+      presence,
+      ...(gameName ? { gameName } : {}),
+      ...(presence !== "offline" ? { lastSeenAt: trackedAt, lastSeenOnlineAt: trackedAt } : {}),
+      ...(presence === "in_game" ? { lastSeenInGameAt: trackedAt } : {}),
+      trackedAt,
+      source: "public-profile",
+    });
+  }
+  return friends.sort((left, right) => left.personaName.localeCompare(right.personaName));
+}
+
+export async function steamCommunityFriends(steamId: string): Promise<SteamFriendPresence[]> {
+  if (!validSteamID(steamId)) throw new Error("Steam returned an invalid account for friend sync.");
+  const response = await fetch(`https://steamcommunity.com/profiles/${steamId}/friends/`, {
+    headers: { accept: "text/html" },
+    redirect: "follow",
+  }).catch(() => undefined);
+  if (!response) throw new Error("Steam friend sync is temporarily unavailable.");
+  const html = await response.text();
+  if (!response.ok || response.url.includes("/login/") || /<title>\s*Sign In\s*<\/title>/i.test(html)) {
+    throw new Error("Steam requires the Friends List to be Public for phone-only friend sync.");
+  }
+  if (/profile_private_info|This profile is private/i.test(html)) {
+    throw new Error("Steam requires the profile and Friends List to be Public for phone-only friend sync.");
+  }
+  return parseSteamFriendsHTML(html, steamId);
+}
+
 function changedEvents(previous: SteamFriendRow, next: SteamFriendPresence): FriendPresenceEventKind[] {
   const events: FriendPresenceEventKind[] = [];
   if (previous.persona_name !== next.personaName) events.push("name_changed");

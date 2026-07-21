@@ -10,7 +10,7 @@ You need:
 - A free [Cloudflare account](https://dash.cloudflare.com/sign-up)
 - About 10 minutes
 - Optional: Twitch/IGDB credentials for live search, covers, dates, scores, and trailers
-- Optional: one Steam Web API key as a public-profile fallback
+- Optional: one operator Steam Web API key for direct visibility-permitted library and friend reads
 
 No personal token or database ID is included in this kit.
 
@@ -36,7 +36,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 The helper installs Wrangler, opens Cloudflare login, creates a D1 database, generates separate random sync and Steam-session secrets, applies all migrations, and deploys the Worker. It never uploads either secret to GitHub.
 
-Steam sign-in verifies the account on Steam's own OpenID page and never exposes a password or browser session. A signed-in GameVault desktop can read Steam's public local library/friend cache and send an outbound HTTPS snapshot; it never opens an inbound PC port or reads Steam login secrets. Phones retain the latest owned-library, playtime, friend, and achievement snapshot when the PC or service is offline. The optional Steam prompt stores one operator Web API key only as a visibility-permitted public-profile fallback. Steam tags, features, full/partial controller support, native Linux availability, and ProtonDB compatibility remain key-free app metadata cached in D1.
+Steam sign-in verifies the account on Steam's own OpenID page and never exposes a password, Steam Guard code, cookie, or browser session. GameVault's hosted service has one operator API credential for direct visibility-permitted library, playtime, friend, persona, and achievement reads; individual phone users never need their own key. A signed-in GameVault desktop can also read Steam's public local library/friend cache and send an outbound HTTPS snapshot as a fallback; it never opens an inbound PC port or reads Steam login secrets. Phones retain the latest snapshot when the PC or service is offline. Steam tags, features, full/partial controller support, native Linux availability, and ProtonDB compatibility remain app-level metadata cached in D1.
 
 At the end, copy the printed `workers.dev` URL and token into **GameVault → Settings → Optional Cloud**, then choose **Save connection** and **Sync**.
 
@@ -52,7 +52,7 @@ npx wrangler deploy -c workers/api/wrangler.jsonc
 
 Wrangler prompts for each value securely. Do not paste credentials into `wrangler.jsonc`.
 
-## Add the optional Steam Web API fallback later
+## Add optional direct Steam Web API access later
 
 Create a key at the [Steam Community API key page](https://steamcommunity.com/dev/apikey), then run:
 
@@ -61,7 +61,7 @@ npx wrangler secret put STEAM_API_KEY -c workers/api/wrangler.jsonc
 npx wrangler deploy -c workers/api/wrangler.jsonc
 ```
 
-This key is not required for Steam OpenID, the outbound desktop relay, Store metadata, or ProtonDB metadata.
+This operator key enables direct visibility-permitted owned-library and friend reads for this Worker. It is not required for Steam OpenID, the outbound desktop relay, Store metadata, or ProtonDB metadata, and it must never be bundled into an app.
 
 ## Important security boundary
 
@@ -75,6 +75,8 @@ The generated token is stored locally in `.gamevault-sync-token`, which is exclu
 - A private D1 database
 - Revision-based autosync between your devices
 - Account-scoped Steam sessions, outbound local-library relay storage, and cached friend tracking
+- Additive social-profile and Wishlist snapshot tables for explicitly enabled friend sharing
+- Cursor-based discovery feed and monthly anticipated-game endpoints
 - Optional rate-limited IGDB metadata proxy and refresh every six hours
 - JSON export endpoint for backups
 

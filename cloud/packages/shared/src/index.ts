@@ -464,6 +464,48 @@ export interface SearchResponse {
   games: Game[];
 }
 
+export interface GameFeedResponse {
+  games: Game[];
+  nextCursor?: string;
+  hasMore: boolean;
+}
+
+export interface AnticipatedMonthResponse {
+  month: string;
+  games: Game[];
+}
+
+export interface GameVaultSocialProfile {
+  steamId: string;
+  personaName: string;
+  avatarUrl?: string;
+  profileUrl: string;
+  shareWishlist: boolean;
+  wishlistCount: number;
+  updatedAt: string;
+}
+
+export interface FriendWishlist {
+  profile: GameVaultSocialProfile;
+  games: Game[];
+}
+
+export interface SocialProfileResponse {
+  profile: GameVaultSocialProfile;
+  games: Game[];
+}
+
+export interface SocialFriendsResponse {
+  me?: GameVaultSocialProfile;
+  friends: FriendWishlist[];
+  syncedAt: string;
+}
+
+export interface SocialWishlistUpdate {
+  shareWishlist: boolean;
+  games: Game[];
+}
+
 export interface ErrorResponse {
   error: {
     code: string;
@@ -473,3 +515,4 @@ export interface ErrorResponse {
 
 export * from "./gamery";
 export * from "./release";
+export * from "./themes";
