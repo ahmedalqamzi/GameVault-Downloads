@@ -41,7 +41,7 @@ if [[ "$add_igdb" =~ ^[Yy]$ ]]; then
   npx wrangler secret put IGDB_CLIENT_SECRET -c workers/api/wrangler.jsonc
 fi
 
-printf "Add Steam library import now? [y/N]: "
+printf "Add Steam library, playtime, and achievement import now? [y/N]: "
 read -r add_steam
 if [[ "$add_steam" =~ ^[Yy]$ ]]; then
   echo "Wrangler will securely prompt for your Steam Web API key."

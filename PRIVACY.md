@@ -8,7 +8,7 @@ Live catalog and metadata requests send only the search text or IGDB game IDs ne
 
 ## Steam connection
 
-Steam sign-in happens on Steam Community through OpenID. GameVault receives the account's public 64-bit Steam ID, not the Steam username or password. If the user starts an import, the Worker uses that ID and its server-side Steam Web API key to request games and playtime that the account's Game Details privacy setting allows.
+Steam sign-in happens on Steam Community through OpenID. GameVault receives the account's public 64-bit Steam ID, not the Steam username, password, or browser session. If the user starts an import, the Worker uses that ID and its server-side Steam Web API key to request games, platform playtime, last-played activity, and achievements that the account's Game Details privacy setting allows. Detailed achievement lists are cached on the device; if optional cloud sync is connected, the smaller Steam activity and completion summaries sync with the library.
 
 Compatibility enrichment sends Steam app IDs to the Steam Store metadata service and ProtonDB to retrieve popular tags, features, controller support, native Linux availability, and community Proton ratings. The Worker caches that app-level metadata in D1. It does not send or store personal notes, folders, ratings, or the rest of the local library with those requests. Proton ratings are community data and are shown as best-effort guidance rather than a guarantee.
 
@@ -29,7 +29,7 @@ The screenshots use a synthetic demonstration library. This repository contains 
 - GitHub hosts this page and the public download files.
 - Cloudflare hosts the optional web app and any personal cloud a user chooses to deploy.
 - The hosted Cloudflare Worker proxies read-only IGDB game metadata; a separately configured personal Worker can provide private library sync.
-- Steam Community handles optional Steam sign-in, and the Steam Web API returns visibility-permitted library and playtime data when configured.
+- Steam Community handles optional Steam sign-in, and the Steam Web API returns visibility-permitted library, playtime, and achievement data when configured.
 - The Steam Store provides tags, features, controller support, and native Linux availability from Steam app IDs; ProtonDB provides community Linux compatibility summaries.
 - YouTube hosts linked trailers.
 - Apple/SideStore/AltStore or Android handles installation on the device.

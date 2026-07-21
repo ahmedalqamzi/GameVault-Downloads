@@ -15,6 +15,7 @@ import type {
   SyncEvent,
   SyncPayload,
   StoreLink,
+  SteamActivityDetails,
   UserPreferences,
 } from "@gamevault/shared";
 import type { EventRow, GameRow, LibraryRow, PreferencesRow } from "./types";
@@ -35,6 +36,18 @@ function parseArray<T>(value: string | null | undefined): T[] {
     return Array.isArray(parsed) ? (parsed as T[]) : [];
   } catch {
     return [];
+  }
+}
+
+function parseObject<T extends object>(value: string | null | undefined): T | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as T
+      : undefined;
+  } catch {
+    return undefined;
   }
 }
 
@@ -105,6 +118,7 @@ function rowToEntry(row: LibraryRow): LibraryEntry {
   const status = LIBRARY_STATUSES.has(row.entry_status as LibraryStatus)
     ? (row.entry_status as LibraryStatus)
     : "wishlist";
+  const steamActivity = parseObject<SteamActivityDetails>(row.steam_activity_json);
   return {
     gameId: row.id,
     status,
@@ -138,6 +152,7 @@ function rowToEntry(row: LibraryRow): LibraryEntry {
       : {}),
     ...(row.steam_last_played_at ? { steamLastPlayedAt: row.steam_last_played_at } : {}),
     ...(row.steam_synced_at ? { steamSyncedAt: row.steam_synced_at } : {}),
+    ...(steamActivity ? { steamActivity } : {}),
     ...(row.is_up_next ? { isUpNext: true } : {}),
     ...(row.manual_order !== null ? { manualOrder: row.manual_order } : {}),
     createdAt: row.entry_created_at,
@@ -161,6 +176,29 @@ function eventFromRow(row: EventRow): SyncEvent {
 export function isValidGame(game: Game): boolean {
   const validID = Number.isSafeInteger(game.id) && (game.id > 0 || (game.id < 0 && game.isCustom));
   return Boolean(validID && game.name.trim().length > 0);
+}
+
+function isValidSteamActivity(value: SteamActivityDetails | undefined): boolean {
+  if (value === undefined) return true;
+  const nonNegativeIntegers = [
+    value.playtimeWindowsMinutes,
+    value.playtimeMacMinutes,
+    value.playtimeLinuxMinutes,
+    value.playtimeDeckMinutes,
+    value.playtimeDisconnectedMinutes,
+    value.achievementsUnlocked,
+    value.achievementsTotal,
+  ];
+  return nonNegativeIntegers.every((item) => item === undefined || (Number.isInteger(item) && item >= 0))
+    && (value.hasCommunityStats === undefined || typeof value.hasCommunityStats === "boolean")
+    && (value.achievementsAvailable === undefined || typeof value.achievementsAvailable === "boolean")
+    && (value.achievementPercent === undefined || (
+      Number.isFinite(value.achievementPercent)
+      && value.achievementPercent >= 0
+      && value.achievementPercent <= 100
+    ))
+    && (value.lastAchievementAt === undefined || !Number.isNaN(Date.parse(value.lastAchievementAt)))
+    && (value.achievementsSyncedAt === undefined || !Number.isNaN(Date.parse(value.achievementsSyncedAt)));
 }
 
 export function isValidEntry(entry: LibraryEntry | undefined, gameId: number): boolean {
@@ -238,6 +276,7 @@ export function isValidEntry(entry: LibraryEntry | undefined, gameId: number): b
         || (Number.isInteger(entry.steamPlaytimeTwoWeeksMinutes) && entry.steamPlaytimeTwoWeeksMinutes >= 0))
       && (entry.steamLastPlayedAt === undefined || !Number.isNaN(Date.parse(entry.steamLastPlayedAt)))
       && (entry.steamSyncedAt === undefined || !Number.isNaN(Date.parse(entry.steamSyncedAt)))
+      && isValidSteamActivity(entry.steamActivity)
       && (entry.isUpNext === undefined || typeof entry.isUpNext === "boolean")
       && (entry.manualOrder === undefined || Number.isFinite(entry.manualOrder))
       && !Number.isNaN(Date.parse(entry.createdAt))
@@ -359,6 +398,7 @@ export async function getLibrary(db: D1Database): Promise<LibraryItem[]> {
       e.steam_playtime_two_weeks_minutes,
       e.steam_last_played_at,
       e.steam_synced_at,
+      e.steam_activity_json,
       e.is_up_next,
       e.manual_order,
       e.created_at AS entry_created_at,
@@ -532,7 +572,8 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
 
   const existing = await db.prepare(
     `SELECT updated_at, custom_folder_ids_json, steam_app_id, steam_playtime_minutes,
-            steam_playtime_two_weeks_minutes, steam_last_played_at, steam_synced_at
+            steam_playtime_two_weeks_minutes, steam_last_played_at, steam_synced_at,
+            steam_activity_json
      FROM library_entries WHERE game_id = ?`,
   ).bind(change.game.id).first<{
     updated_at: string;
@@ -542,6 +583,7 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
     steam_playtime_two_weeks_minutes: number | null;
     steam_last_played_at: string | null;
     steam_synced_at: string | null;
+    steam_activity_json: string | null;
   }>();
   if (existing && existing.updated_at > change.changedAt) {
     return { id: change.id, disposition: "stale" };
@@ -591,6 +633,9 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
       entry.steamLastPlayedAt = existing.steam_last_played_at;
     }
     if (entry.steamSyncedAt === undefined && existing.steam_synced_at) entry.steamSyncedAt = existing.steam_synced_at;
+    if (entry.steamActivity === undefined && existing.steam_activity_json) {
+      entry.steamActivity = parseObject<SteamActivityDetails>(existing.steam_activity_json);
+    }
   }
   await db.prepare(
     `INSERT INTO library_entries (
@@ -599,8 +644,8 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
       tags_json, playthroughs_json, play_sessions_json, friends_json,
       custom_folder_ids_json, steam_app_id, steam_playtime_minutes,
       steam_playtime_two_weeks_minutes, steam_last_played_at, steam_synced_at,
-      is_up_next, manual_order, created_at, updated_at, deleted_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+      steam_activity_json, is_up_next, manual_order, created_at, updated_at, deleted_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
     ON CONFLICT(game_id) DO UPDATE SET
       status = excluded.status,
       notes = excluded.notes,
@@ -621,6 +666,7 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
       steam_playtime_two_weeks_minutes = excluded.steam_playtime_two_weeks_minutes,
       steam_last_played_at = excluded.steam_last_played_at,
       steam_synced_at = excluded.steam_synced_at,
+      steam_activity_json = excluded.steam_activity_json,
       is_up_next = excluded.is_up_next,
       manual_order = excluded.manual_order,
       updated_at = excluded.updated_at,
@@ -646,6 +692,7 @@ async function applyChange(db: D1Database, change: ClientChange): Promise<PushRe
     entry.steamPlaytimeTwoWeeksMinutes ?? null,
     entry.steamLastPlayedAt ?? null,
     entry.steamSyncedAt ?? null,
+    entry.steamActivity === undefined ? null : JSON.stringify(entry.steamActivity),
     entry.isUpNext ? 1 : 0,
     entry.manualOrder ?? null,
     entry.createdAt,
