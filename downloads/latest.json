@@ -1,16 +1,16 @@
 {
-  "version": "0.8.0",
-  "releasedAt": "2026-07-21T21:31:20Z",
-  "androidVersionCode": 11,
+  "version": "0.8.1",
+  "releasedAt": "2026-07-22T03:53:23Z",
+  "androidVersionCode": 12,
   "minimumAndroidSdk": 26,
   "androidUrl": "https://ahmedalqamzi.github.io/GameVault-Downloads/downloads/GameVault-Android.apk",
-  "androidSha256": "30064c5b1a9dbad5ddfadb6a04a867779ef81cc7c7a33992de377f0da508a050",
+  "androidSha256": "e7122ccf5bc20b43d765c6f392645b982fbc42b473548f93b8da9a277d800e27",
   "notes": [
-    "Collapsible theme picker with original emblems, surface patterns, shadows, and shapes",
-    "Collapsible Franchises within the tile-based Collection home",
-    "Endless discovery feed with one-tap Wishlist and each month's Top 10 anticipated games",
-    "Opt-in Friend Wishlists shared only with verified Steam friends across all apps",
-    "Standalone phone Steam library, playtime, achievements, and friend data",
-    "Mobile performance improvements with all existing on-device data retained"
+    "Curated Feed removes raw catalog filler and prioritizes well-rated, widely reviewed games",
+    "Inspired themes now restyle the full interface: navigation, headings, cards, controls, chips, cover frames, backgrounds, and motion",
+    "Original theme emblems now appear contextually in page headers and subtle interface atmosphere",
+    "GameVault and Inspired theme groups collapse independently and remember their state",
+    "Franchise lists and Collection franchise tiles collapse cleanly, including their search controls",
+    "Android and iOS keep all existing on-device library data during the update"
   ]
 }
