@@ -1,16 +1,16 @@
 {
-  "version": "0.8.1",
-  "releasedAt": "2026-07-22T03:53:23Z",
-  "androidVersionCode": 12,
+  "version": "0.9.0",
+  "releasedAt": "2026-07-22T14:13:34Z",
+  "androidVersionCode": 13,
   "minimumAndroidSdk": 26,
   "androidUrl": "https://ahmedalqamzi.github.io/GameVault-Downloads/downloads/GameVault-Android.apk",
-  "androidSha256": "e7122ccf5bc20b43d765c6f392645b982fbc42b473548f93b8da9a277d800e27",
+  "androidSha256": "9cae6dd2260f57ba33cfdf84c9995d6ef9159a130ba0e8919ffe63c4b63e0ac8",
   "notes": [
-    "Curated Feed removes raw catalog filler and prioritizes well-rated, widely reviewed games",
-    "Inspired themes now restyle the full interface: navigation, headings, cards, controls, chips, cover frames, backgrounds, and motion",
-    "Original theme emblems now appear contextually in page headers and subtle interface atmosphere",
-    "GameVault and Inspired theme groups collapse independently and remember their state",
-    "Franchise lists and Collection franchise tiles collapse cleanly, including their search controls",
+    "New Announcements hub tracks verified gaming showcases, conventions, awards, esports, trailers, and season reveals",
+    "Exact event times are shown in each device's local timezone; date-only events stay clearly marked Time TBA",
+    "Distinct source emblems and checkbox filters make events and official videos easy to scan",
+    "Official YouTube playback now works directly in Announcements, including Marvel Rivals Season 9",
+    "The last successful schedule remains available if the service is offline",
     "Android and iOS keep all existing on-device library data during the update"
   ]
 }

@@ -1,4 +1,4 @@
-# GameVault 0.8.1 downloads
+# GameVault 0.9.0 downloads
 
 Public downloads, screenshots, and install instructions for GameVault.
 
@@ -10,20 +10,22 @@ Public downloads, screenshots, and install instructions for GameVault.
 
 | Platform | File | SHA-256 |
 | --- | --- | --- |
-| Android 8+ | [GameVault-Android.apk](downloads/GameVault-Android.apk) | `e7122ccf5bc20b43d765c6f392645b982fbc42b473548f93b8da9a277d800e27` |
-| iOS 17+ | [GameVault-iOS-unsigned.ipa](downloads/GameVault-iOS-unsigned.ipa) | `eba8d4be58b913b4bfcba241963811d80f712050fb98d37af3a7feae68c7771c` |
-| Windows setup | [GameVault-0.8.1-windows-x64-setup.exe](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.1/GameVault-0.8.1-windows-x64-setup.exe) | `afb1832330ee24f0eccdd40a5d82dba3bb1d68ca3f5a5bdeb43c676b7651e491` |
-| Windows portable | [GameVault-0.8.1-windows-x64-portable.exe](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.1/GameVault-0.8.1-windows-x64-portable.exe) | `0deb5ed5bf95a70aa7e4fdbccabe7e93eab9ee35a2c7e389e5471f8f0a0ddedf` |
-| Linux x86-64 | [GameVault-0.8.1-linux-x86_64.AppImage](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.1/GameVault-0.8.1-linux-x86_64.AppImage) | `f9a702679476fe08d44c49d7d3341d9c42e094f300f0c3eefb1a2e7ed02f3daf` |
-| macOS Apple Silicon DMG | [GameVault-0.8.1-mac-arm64.dmg](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.1/GameVault-0.8.1-mac-arm64.dmg) | `d9d3fa05d9eb975208d8d247e3a91d07f62214bdf3559f8b862bae4b0bfb1563` |
-| macOS Apple Silicon ZIP | [GameVault-0.8.1-mac-arm64.zip](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.1/GameVault-0.8.1-mac-arm64.zip) | `c52ff8418cb9bef1806bc0e37b29dbf894d070ec298b98af5ed2d2640287f288` |
+| Android 8+ | [GameVault-Android.apk](downloads/GameVault-Android.apk) | `9cae6dd2260f57ba33cfdf84c9995d6ef9159a130ba0e8919ffe63c4b63e0ac8` |
+| iOS 17+ | [GameVault-iOS-unsigned.ipa](downloads/GameVault-iOS-unsigned.ipa) | `6036f085f5a921cde4476ef692b2236bb0393bf86a6fc0dcd0ae4699899b5f1e` |
+| Windows setup | [GameVault-0.9.0-windows-x64-setup.exe](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-windows-x64-setup.exe) | `c59000604432f2faa7cbda9462667fbd30290ff3b7574d50e659106f338a85d8` |
+| Windows portable | [GameVault-0.9.0-windows-x64-portable.exe](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-windows-x64-portable.exe) | `00b4cbe07877138ae5fd82a85375694d327515d556a0cf83c761b67d11672d8c` |
+| Linux x86-64 | [GameVault-0.9.0-linux-x86_64.AppImage](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-linux-x86_64.AppImage) | `7572873b6feaba8614bc75e6c01b8d3d7aed4f6a52b1ca2f57841648d8b32b1b` |
+| macOS Apple Silicon DMG | [GameVault-0.9.0-mac-arm64.dmg](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-mac-arm64.dmg) | `b9f5f47e7b83c21fd613cdafa3311e6635fa2c59d5e5c479bcf69d28004e1c08` |
+| macOS Apple Silicon ZIP | [GameVault-0.9.0-mac-arm64.zip](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-mac-arm64.zip) | `e4cbcd8dc3bf4c9ba3b3aab9d115cd91fda010e0360dac90aa596c823b4822c8` |
 | Optional cloud | [GameVault-Cloud-Setup.zip](downloads/GameVault-Cloud-Setup.zip) | `d791f09a456d16c7e600554aaceb02f93be14036557fd5ed83c272df8c67e979` |
 
 The Android APK is a signed direct-install build. The iPhone IPA is unsigned and must be installed with SideStore, AltStore, or another sideloading tool. Free Apple signing normally needs refreshing every seven days.
 
 ## Use it without a server
 
-GameVault starts in local-only mode. Version 0.8.1 curates the endless Feed around released games with real rating and review evidence, while the monthly Top 10 remains the place for anticipated releases. It keeps one-tap Wishlist actions and opt-in Friend Wishlists across Android, iPhone, web, and desktop.
+GameVault starts in local-only mode. Version 0.9.0 adds an Announcements hub for gaming showcases, conventions, awards, esports, trailers, and season reveals across Android, iPhone, web, and desktop. Exact times use each device's timezone, date-only events remain clearly marked Time TBA, every source has a distinct emblem, and official YouTube videos play in the app. The last successful schedule remains cached when the service is offline.
+
+The endless Feed stays curated around released games with real rating and review evidence, while the monthly Top 10 remains the place for anticipated releases. It keeps one-tap Wishlist actions and opt-in Friend Wishlists across every app.
 
 The 24 themes now change the full interface: contextual emblems, page atmosphere, navigation, headings, surface shapes, buttons, borders, chips, cover frames, shadows, patterns, colors, typography, and reduced-motion-safe animation. GameVault and Inspired theme groups collapse independently, while Franchise navigation and Collection franchise tiles also collapse and remember their state. Inspired themes use original fan-made homage names and artwork rather than official franchise logos, and GameVault is not affiliated with the referenced rights holders.
 
@@ -35,7 +37,7 @@ Controller support, Steam tags, and ProtonDB results are loaded from their live 
 
 GameVault also includes private/manual friend profiles, cached Steam presence changes, IGDB time-to-beat estimates, multi-store ownership and hours, and an optional ordered Up Next 3. Friend Wishlist sharing is off by default. When enabled, the hosted service stores the Steam ID, public persona/avatar, and the selected Wishlist snapshot so verified Steam friends using GameVault can see it; turning sharing off removes the published game snapshot, and the profile can be deleted from the app.
 
-Signed APK updates retain the existing Android library when installed over the old version, and 0.8.1 checks a signed-hash manifest for later APKs. The Windows setup build and Linux AppImage check the desktop update feed; Windows portable and unsigned macOS packages update manually. Settings can also export and restore a complete local JSON backup without including the private sync token.
+Signed APK updates retain the existing Android library when installed over the old version, and 0.9.0 checks a signed-hash manifest for later APKs. The Windows setup build and Linux AppImage check the desktop update feed; Windows portable and unsigned macOS packages update manually. Settings can also export and restore a complete local JSON backup without including the private sync token.
 
 ## Optional private cloud
 

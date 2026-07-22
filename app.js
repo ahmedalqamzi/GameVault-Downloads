@@ -67,13 +67,13 @@ if (isIOS) {
   smartDownload = "downloads/GameVault-iOS-unsigned.ipa";
   smartLabel = "Download for iPhone";
 } else if (isWindows) {
-  smartDownload = "https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.1/GameVault-0.8.1-windows-x64-setup.exe";
+  smartDownload = "https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-windows-x64-setup.exe";
   smartLabel = "Download for Windows";
 } else if (isMac) {
-  smartDownload = "https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.1/GameVault-0.8.1-mac-arm64.dmg";
+  smartDownload = "https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-mac-arm64.dmg";
   smartLabel = "Download for macOS";
 } else if (isLinux) {
-  smartDownload = "https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.8.1/GameVault-0.8.1-linux-x86_64.AppImage";
+  smartDownload = "https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-linux-x86_64.AppImage";
   smartLabel = "Download for Linux";
 }
 
