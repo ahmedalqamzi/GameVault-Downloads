@@ -1,5 +1,7 @@
 9cae6dd2260f57ba33cfdf84c9995d6ef9159a130ba0e8919ffe63c4b63e0ac8  GameVault-Android.apk
-6036f085f5a921cde4476ef692b2236bb0393bf86a6fc0dcd0ae4699899b5f1e  GameVault-iOS-unsigned.ipa
+67679a66d60a3a506e04c710a677fe3735f9a6df8e4712daacfd0aca0d819fea  GameVault-iOS-unsigned.ipa
+6036f085f5a921cde4476ef692b2236bb0393bf86a6fc0dcd0ae4699899b5f1e  GameVault-iOS-0.9.0-unsigned.ipa
+67679a66d60a3a506e04c710a677fe3735f9a6df8e4712daacfd0aca0d819fea  GameVault-iOS-0.9.1-unsigned.ipa
 d791f09a456d16c7e600554aaceb02f93be14036557fd5ed83c272df8c67e979  GameVault-Cloud-Setup.zip
 7572873b6feaba8614bc75e6c01b8d3d7aed4f6a52b1ca2f57841648d8b32b1b  GameVault-0.9.0-linux-x86_64.AppImage
 b9f5f47e7b83c21fd613cdafa3311e6635fa2c59d5e5c479bcf69d28004e1c08  GameVault-0.9.0-mac-arm64.dmg

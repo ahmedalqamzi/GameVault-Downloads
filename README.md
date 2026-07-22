@@ -11,7 +11,7 @@ Public downloads, screenshots, and install instructions for GameVault.
 | Platform | File | SHA-256 |
 | --- | --- | --- |
 | Android 8+ | [GameVault-Android.apk](downloads/GameVault-Android.apk) | `9cae6dd2260f57ba33cfdf84c9995d6ef9159a130ba0e8919ffe63c4b63e0ac8` |
-| iOS 17+ | [GameVault-iOS-unsigned.ipa](downloads/GameVault-iOS-unsigned.ipa) | `6036f085f5a921cde4476ef692b2236bb0393bf86a6fc0dcd0ae4699899b5f1e` |
+| iOS 17+ | [GameVault-iOS-unsigned.ipa](downloads/GameVault-iOS-unsigned.ipa) | `67679a66d60a3a506e04c710a677fe3735f9a6df8e4712daacfd0aca0d819fea` |
 | Windows setup | [GameVault-0.9.0-windows-x64-setup.exe](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-windows-x64-setup.exe) | `c59000604432f2faa7cbda9462667fbd30290ff3b7574d50e659106f338a85d8` |
 | Windows portable | [GameVault-0.9.0-windows-x64-portable.exe](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-windows-x64-portable.exe) | `00b4cbe07877138ae5fd82a85375694d327515d556a0cf83c761b67d11672d8c` |
 | Linux x86-64 | [GameVault-0.9.0-linux-x86_64.AppImage](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-linux-x86_64.AppImage) | `7572873b6feaba8614bc75e6c01b8d3d7aed4f6a52b1ca2f57841648d8b32b1b` |
@@ -19,7 +19,7 @@ Public downloads, screenshots, and install instructions for GameVault.
 | macOS Apple Silicon ZIP | [GameVault-0.9.0-mac-arm64.zip](https://github.com/ahmedalqamzi/GameVault-Downloads/releases/download/v0.9.0/GameVault-0.9.0-mac-arm64.zip) | `e4cbcd8dc3bf4c9ba3b3aab9d115cd91fda010e0360dac90aa596c823b4822c8` |
 | Optional cloud | [GameVault-Cloud-Setup.zip](downloads/GameVault-Cloud-Setup.zip) | `d791f09a456d16c7e600554aaceb02f93be14036557fd5ed83c272df8c67e979` |
 
-The Android APK is a signed direct-install build. The iPhone IPA is unsigned and must be installed with SideStore, AltStore, or another sideloading tool. Free Apple signing normally needs refreshing every seven days.
+The Android APK is a signed direct-install build. The current iPhone build is GameVault 0.9.1 (build 13); its IPA is unsigned and must be installed with SideStore, AltStore, or another sideloading tool. Free Apple signing normally needs refreshing every seven days.
 
 ## Use it without a server
 
