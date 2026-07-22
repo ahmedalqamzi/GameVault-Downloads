@@ -1,8 +1,8 @@
-version: 0.8.0
+version: 0.8.1
 files:
-  - url: GameVault-0.8.0-windows-x64-setup.exe
-    sha512: b0QHK7FSVB/wVPrPkxlmvth9zx/TuzGzsSwfemXtNYRKOsGMRHg5gq4ZQIn9C0EBIpADXXGpZC0EpBSNJ2dRGQ==
-    size: 99366638
-path: GameVault-0.8.0-windows-x64-setup.exe
-sha512: b0QHK7FSVB/wVPrPkxlmvth9zx/TuzGzsSwfemXtNYRKOsGMRHg5gq4ZQIn9C0EBIpADXXGpZC0EpBSNJ2dRGQ==
-releaseDate: '2026-07-21T21:34:22.859Z'
+  - url: GameVault-0.8.1-windows-x64-setup.exe
+    sha512: fkJcLR03NsSdzWihHGiaKwpdyyoMdn0sYtpW2L8T2D7htSJXrgpfP2CMm5jwZFabMJqW7fnNmtgZOEVTGVWKwA==
+    size: 99369743
+path: GameVault-0.8.1-windows-x64-setup.exe
+sha512: fkJcLR03NsSdzWihHGiaKwpdyyoMdn0sYtpW2L8T2D7htSJXrgpfP2CMm5jwZFabMJqW7fnNmtgZOEVTGVWKwA==
+releaseDate: '2026-07-22T03:56:07.064Z'

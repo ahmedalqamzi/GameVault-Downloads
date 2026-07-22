@@ -1,11 +1,11 @@
-version: 0.8.0
+version: 0.8.1
 files:
-  - url: GameVault-0.8.0-mac-arm64.zip
-    sha512: DuADq3teXapkYt/+ArAbksOYA0LQkyp/BipGEpd2sOwUSp+mlAy2r0sbdkoOuPp6bcda486zyg9YpzfuzV9jzA==
-    size: 120342689
-  - url: GameVault-0.8.0-mac-arm64.dmg
-    sha512: WdCG1upM661/jtHdKR6jZfeZXk3ePFrYKGzglcfTTQ3B7VA5YO6za1pyPMb6mz3bZFh5xj4zzrJpPs/6MgpFyw==
-    size: 109611255
-path: GameVault-0.8.0-mac-arm64.zip
-sha512: DuADq3teXapkYt/+ArAbksOYA0LQkyp/BipGEpd2sOwUSp+mlAy2r0sbdkoOuPp6bcda486zyg9YpzfuzV9jzA==
-releaseDate: '2026-07-21T21:32:35.195Z'
+  - url: GameVault-0.8.1-mac-arm64.zip
+    sha512: 2+wXvT1gwex2OE9b1XIrd+K7YV9mNThut7CgYIASiaa77S6HrNmQQBZ19nq8JDlgKYKqXfjo03bR5jalGlwt4g==
+    size: 120346586
+  - url: GameVault-0.8.1-mac-arm64.dmg
+    sha512: IKT3Sze5J2OHe/W4UhYjuON7uiunWZoNepfafVvEE+yDWMto1OGnE9xaZDH6iLN/RqEil1Q913SYiFbZt1R4hw==
+    size: 109629565
+path: GameVault-0.8.1-mac-arm64.zip
+sha512: 2+wXvT1gwex2OE9b1XIrd+K7YV9mNThut7CgYIASiaa77S6HrNmQQBZ19nq8JDlgKYKqXfjo03bR5jalGlwt4g==
+releaseDate: '2026-07-22T03:54:28.732Z'
