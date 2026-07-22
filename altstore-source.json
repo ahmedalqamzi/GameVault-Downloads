@@ -11,17 +11,17 @@
       "bundleIdentifier": "app.gamevault.personal",
       "developerName": "GameVault",
       "subtitle": "Your games, releases, progress, and friends",
-      "localizedDescription": "A local-first game library with Collection tiles, Catalog filters, franchises, release tracking, Steam progress, achievements, friends, and optional private sync.",
+      "localizedDescription": "A local-first game library with timezone-aware gaming announcements, Collection tiles, Catalog filters, franchises, release tracking, Steam progress, achievements, friends, and optional private sync.",
       "iconURL": "https://ahmedalqamzi.github.io/GameVault-Downloads/assets/icon-1024.png",
       "tintColor": "B8893F",
       "category": "utilities",
       "versions": [
         {
-          "version": "0.8.1",
-          "buildVersion": "11",
+          "version": "0.9.0",
+          "buildVersion": "12",
           "date": "2026-07-22",
           "downloadURL": "https://ahmedalqamzi.github.io/GameVault-Downloads/downloads/GameVault-iOS-unsigned.ipa",
-          "size": 1561403,
+          "size": 1730171,
           "minOSVersion": "17.0"
         }
       ],
